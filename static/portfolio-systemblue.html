@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Systemblue New Media — UX | UI Design by Sandy Isaacs</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: transparent;
+    --yellow: #f3d11e;
+    --grey: #8a8a8a;
+    --grey-2: #6f6f6f;
+    --panel: #e8f5fb;
+    --ink: #1a1a1a;
+    --ink-dim: #5a5a5a;
+    --font: 'Franklin Gothic Book', 'Helvetica Neue', Arial, 'Liberation Sans', sans-serif;
+    --font-demi: 'Franklin Gothic Demi', 'Franklin Gothic Medium', 'Helvetica Neue', Arial, sans-serif;
+    --maxw: 1180px;
+  }
+
+  html { scroll-behavior: smooth; }
+  body { background: var(--bg); color: #fff; font-family: var(--font); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+  a { text-decoration: none; color: inherit; }
+  img { display: block; max-width: 100%; }
+
+  /* ───────── Sticky nav ───────── */
+  .nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    height: 70px; display: flex; align-items: center;
+    background: rgba(0,0,0,0.72); backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .nav-inner { width: 100%; max-width: var(--maxw); margin: 0 auto; padding: 0 28px; display: flex; align-items: center; justify-content: space-between; }
+  .brand { font-family: var(--font-demi); font-size: 1.5rem; letter-spacing: -0.01em; color: #d8d8d8; }
+  .brand b { color: var(--yellow); font-weight: 700; }
+  .nav-links { display: flex; align-items: center; gap: 38px; }
+  .nav-links a { font-size: 0.86rem; color: var(--grey); transition: color 0.2s; }
+  .nav-links a:hover, .nav-links a.active { color: #e8e8e8; }
+  .contact-btn {
+    border: 1px solid rgba(255,255,255,0.25); background: #eef5f8; color: #1a1a1a !important;
+    padding: 11px 20px; border-radius: 7px; font-weight: 600; font-size: 0.84rem !important;
+    transition: background 0.2s, transform 0.2s;
+  }
+  .contact-btn:hover { background: #fff; transform: translateY(-1px); }
+  .nav-toggle { display: none; background: none; border: none; color: #ccc; font-size: 1.25rem; cursor: pointer; }
+
+  /* ───────── Views ───────── */
+  main { padding-top: 70px; }
+  .view { display: none; }
+  .view.is-active { display: block; animation: viewFade 0.4s ease; }
+  @keyframes viewFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 28px; }
+
+  /* ───────── Hero ───────── */
+  .hero { padding: 92px 0 70px; }
+  .hero-grid { display: flex; align-items: flex-start; gap: 56px; flex-wrap: wrap; }
+  .hero-left { padding-top: 6px; }
+  .hero-title { font-family: var(--font-demi); font-weight: 700; font-size: clamp(40px, 6vw, 70px); color: #7c7c7c; line-height: 1; letter-spacing: -0.01em; }
+  .hero-title .bar { color: var(--yellow); font-weight: 400; margin: 0 2px; }
+  .hero-by { display: block; text-align: right; margin-top: 8px; font-family: var(--font-demi); font-weight: 700; font-size: 0.95rem; color: #9c9268; }
+  .hero-tag { font-size: clamp(20px, 2.6vw, 30px); color: #8f8f8f; line-height: 1.32; font-weight: 400; padding-top: 6px; }
+
+  /* ───────── Case studies (home) ───────── */
+  .cs-heading { font-size: 1.7rem; color: #8f8f8f; font-weight: 400; margin: 26px 0 30px; }
+
+  .cs-card { display: grid; grid-template-columns: 1.05fr 1fr; gap: 30px; align-items: center; margin-bottom: 62px; }
+  .cs-media { display: flex; align-items: center; justify-content: center; min-height: 150px; }
+  .cs-media img { width: 100%; height: auto; object-fit: contain; }
+  .cs-card.is-link .cs-media { cursor: pointer; transition: transform 0.35s ease; }
+  .cs-card.is-link:hover .cs-media { transform: translateY(-4px) scale(1.01); }
+
+  .cs-panel { background: var(--panel); color: var(--ink); border-radius: 12px; padding: 30px 34px; }
+  .cs-eyebrow { font-family: var(--font-demi); font-weight: 700; font-size: 1.02rem; color: #111; margin-bottom: 14px; }
+  .cs-title { font-family: var(--font-demi); font-weight: 700; font-size: 1.06rem; color: #111; margin-bottom: 14px; }
+  .cs-body { font-size: 0.92rem; line-height: 1.6; color: #4f4f4f; margin-bottom: 18px; max-width: 42ch; }
+  .cs-link { display: inline-flex; align-items: center; gap: 8px; font-size: 0.9rem; color: #111; font-weight: 500; margin-bottom: 22px; transition: gap 0.2s; }
+  .cs-card.is-link:hover .cs-link { gap: 14px; }
+  .cs-role { font-family: var(--font-demi); font-weight: 700; font-size: 0.96rem; color: #111; margin-bottom: 16px; }
+  .cs-tech { display: flex; align-items: center; gap: 16px; }
+  .cs-tech i { font-size: 2rem; }
+  .fa-css3-alt { color: #1572b6; }
+  .fa-square-js { color: #f7df1e; }
+  .fa-html5 { color: #e34f26; }
+  .fa-figma { color: #a259ff; }
+  .figma-mark { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-demi); font-weight: 700; font-size: 1.5rem; color: #111; }
+  .adobe { width: 36px; height: 36px; border-radius: 7px; display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-demi); font-weight: 700; font-size: 0.92rem; }
+  .ps { background: #001e36; color: #31a8ff; border: 1px solid #31a8ff; }
+  .ai { background: #2a1400; color: #ff9a00; border: 1px solid #ff9a00; }
+
+  /* ───────── Case study views (page images) ───────── */
+  .case-view { padding: 8px 0 80px; }
+  .case-wrap { max-width: 1432px; margin: 0 auto; }
+  .case-wrap img { width: 100%; height: auto; }
+  .case-back {
+    position: fixed; left: 22px; bottom: 22px; z-index: 90;
+    display: inline-flex; align-items: center; gap: 9px;
+    background: rgba(20,20,20,0.85); color: #eaeaea; border: 1px solid rgba(255,255,255,0.14);
+    padding: 11px 18px; border-radius: 999px; font-size: 0.82rem; backdrop-filter: blur(8px);
+    transition: background 0.2s, transform 0.2s; cursor: pointer;
+  }
+  .case-back:hover { background: rgba(40,40,40,0.95); transform: translateY(-2px); }
+
+  /* ───────── Footer ───────── */
+  .site-foot { border-top: 1px solid rgba(255,255,255,0.06); padding: 40px 0; text-align: center; color: #5a5a5a; font-size: 0.82rem; }
+
+  /* ───────── Responsive ───────── */
+  @media (max-width: 860px) {
+    .nav-links { gap: 20px; }
+    .nav-links a:not(.contact-btn) { display: none; }
+    .nav-toggle { display: inline-block; }
+    .nav-links.open a:not(.contact-btn) { display: block; }
+    .nav-links.open { position: absolute; top: 70px; right: 0; left: 0; flex-direction: column; align-items: flex-start; gap: 0; background: rgba(0,0,0,0.95); padding: 8px 28px 16px; }
+    .nav-links.open a { padding: 12px 0; width: 100%; }
+    .hero-grid { gap: 26px; }
+    .hero-by { text-align: left; }
+    .cs-card { grid-template-columns: 1fr; gap: 18px; }
+    .cs-media { order: -1; }
+  }
+  @media (max-width: 520px) {
+    .wrap, .nav-inner { padding: 0 18px; }
+    .cs-panel { padding: 24px 22px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ───────── NAV ───────── -->
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="#/" data-link><b>Systemblue</b> New&nbsp;Media</a>
+    <button class="nav-toggle" id="navToggle" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
+    <nav class="nav-links" id="navLinks">
+      <a href="#/case-studies" data-link>Case studies</a>
+      <a href="#/" data-link>Personal projects</a>
+      <a class="contact-btn" href="mailto:hello@systemblue.example">Contact me</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <!-- ═══════════ HOME ═══════════ -->
+  <section id="view-home" class="view">
+    <div class="wrap">
+      <div class="hero">
+        <div class="hero-grid">
+          <div class="hero-left">
+            <h1 class="hero-title">UX<span class="bar">|</span>UI&nbsp;Design</h1>
+            <span class="hero-by">by Sandy Isaacs</span>
+          </div>
+          <p class="hero-tag">Intuitive interfaces<br>that drive measurable results</p>
+        </div>
+      </div>
+
+      <h2 class="cs-heading" id="case-studies">Case studies</h2>
+
+      <!-- Card 1 — WorkSafeBC -->
+      <a class="cs-card is-link" href="#/case-studies/worksafebc" data-link>
+        <div class="cs-media"><img src="dev-phones.png" alt="WorkSafeBC Prohibited Action Complaint app on three phones"></div>
+        <div class="cs-panel">
+          <div class="cs-eyebrow">WorkSafeBC</div>
+          <div class="cs-title">Prohibited Action Complaint, responsive app</div>
+          <p class="cs-body">WorkSafeBC provides information and services to prevent workplace injuries, diseases and deaths in BC. The Prohibited Action Complaint application allows workers to report misconduct by employers or unions.</p>
+          <span class="cs-link">View case study <i class="fa-solid fa-arrow-right"></i></span>
+          <div class="cs-role">UI&nbsp;|&nbsp;UX Designer</div>
+          <div class="cs-tech">
+            <i class="fa-brands fa-css3-alt" title="CSS3"></i>
+            <i class="fa-brands fa-square-js" title="JavaScript"></i>
+            <i class="fa-brands fa-html5" title="HTML5"></i>
+            <span class="figma-mark"><i class="fa-brands fa-figma"></i>Figma</span>
+          </div>
+        </div>
+      </a>
+
+      <!-- Card 2 — NuData Security -->
+      <a class="cs-card is-link" href="#/case-studies/nudetect" data-link>
+        <div class="cs-media"><img src="dev-laptop.png" alt="NuData Security dashboard on a laptop"></div>
+        <div class="cs-panel">
+          <div class="cs-eyebrow">NuData Security, a Mastercard company</div>
+          <div class="cs-title">Dashboard and data visualisations</div>
+          <p class="cs-body">NuData Security is a critical element of the Mastercard Cyber and Intelligence business which is helping to create a secure and inclusive digital future with a range of identity, cyber and AI technologies.</p>
+          <span class="cs-link">View case study <i class="fa-solid fa-arrow-right"></i></span>
+          <div class="cs-role">UI Designer</div>
+          <div class="cs-tech">
+            <span class="adobe ps">Ps</span>
+            <span class="adobe ai">Ai</span>
+          </div>
+        </div>
+      </a>
+
+      <!-- Card 3 — Bodog -->
+      <div class="cs-card">
+        <div class="cs-media"><img src="dev-tv.png" alt="Bodog logo on a television"></div>
+        <div class="cs-panel">
+          <div class="cs-eyebrow">Bodog</div>
+          <div class="cs-title">Visual ID</div>
+          <p class="cs-body">The Bodog Sportsbook offers the latest NFL Odds, NBA betting options, a huge variety of NHL odds, the best MLB odds and Super Bowl in Canada.</p>
+          <div class="cs-role">Graphic Designer</div>
+          <div class="cs-tech">
+            <span class="adobe ps">Ps</span>
+            <span class="adobe ai">Ai</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="site-foot">© <span id="yr"></span> Systemblue New Media · UX | UI Design by Sandy Isaacs</footer>
+  </section>
+
+  <!-- ═══════════ CASE STUDY — WorkSafeBC ═══════════ -->
+  <section id="view-worksafebc" class="view case-view">
+    <div class="case-wrap">
+      <img src="case-worksafebc.png" alt="Prohibited Action Complaints — full WorkSafeBC UX case study">
+    </div>
+  </section>
+
+  <!-- ═══════════ CASE STUDY — NuDetect ═══════════ -->
+  <section id="view-nudetect" class="view case-view">
+    <div class="case-wrap">
+      <img src="case-nudetect.png" alt="NuDetect Dashboard UI/UX — full NuData Security case study">
+    </div>
+  </section>
+
+</main>
+
+<a class="case-back" id="caseBack" href="#/case-studies" data-link style="display:none">
+  <i class="fa-solid fa-arrow-left"></i> Case studies
+</a>
+
+<script>
+(function () {
+  document.getElementById('yr').textContent = new Date().getFullYear();
+
+  var views = {
+    '/':                          'view-home',
+    '/case-studies':              'view-home',
+    '/personal':                  'view-home',
+    '/case-studies/worksafebc':   'view-worksafebc',
+    '/case-studies/nudetect':     'view-nudetect'
+  };
+  var caseBack = document.getElementById('caseBack');
+  var navLinks = document.getElementById('navLinks');
+  var navToggle = document.getElementById('navToggle');
+
+  function setActiveNav(path) {
+    document.querySelectorAll('.nav-links a').forEach(function (a) { a.classList.remove('active'); });
+    if (path.indexOf('/case-studies') === 0) {
+      var l = document.querySelector('.nav-links a[href="#/case-studies"]');
+      if (l) l.classList.add('active');
+    }
+  }
+
+  function render() {
+    var path = (location.hash || '#/').slice(1) || '/';
+    var viewId = views[path] || 'view-home';
+
+    document.querySelectorAll('.view').forEach(function (v) { v.classList.remove('is-active'); });
+    var view = document.getElementById(viewId);
+    view.classList.add('is-active');
+
+    // show the floating "back" control only inside a case study
+    caseBack.style.display = (viewId === 'view-home') ? 'none' : 'inline-flex';
+
+    setActiveNav(path);
+
+    // app-like behaviour: jump to the top of each view, no reload
+    window.scrollTo(0, 0);
+
+    // "Case studies" deep-links to the cards on the home view
+    if (path === '/case-studies') {
+      var anchor = document.getElementById('case-studies');
+      if (anchor) anchor.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // close the mobile menu after navigating
+    navLinks.classList.remove('open');
+  }
+
+  // hash routing = no page reloads; back/forward buttons just work
+  window.addEventListener('hashchange', render);
+  window.addEventListener('DOMContentLoaded', render);
+  render();
+
+  // mobile menu
+  navToggle.addEventListener('click', function () { navLinks.classList.toggle('open'); });
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Systemblue New Media — UX/UI Design by Sandy Isaacs</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --sea-foam: #b9c6c8;
+    --type-mono: 'SF Mono', 'Fira Mono', ui-monospace, 'Consolas', monospace;
+  }
+
+  body {
+    background: #0a0f11;
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    overflow-x: hidden;
+  }
+
+  #stage { position: fixed; inset: 0; z-index: 0; }
+  #gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+  /* Cinematic vignette + cool wash to seat the render in a moody grade */
+  #grade {
+    position: fixed; inset: 0; z-index: 1; pointer-events: none;
+    background:
+      radial-gradient(ellipse at 50% 42%, transparent 50%, rgba(4,9,11,0.5) 100%),
+      linear-gradient(to bottom, rgba(10,18,22,0.18), transparent 30%, transparent 80%, rgba(4,8,10,0.3));
+    mix-blend-mode: multiply;
+  }
+
+  /* ── HUD ── */
+  #scroll-hint {
+    position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
+    z-index: 10; display: flex; flex-direction: column; align-items: center; gap: 10px;
+    opacity: 1; transition: opacity 0.6s;
+  }
+  #scroll-hint.gone { opacity: 0; pointer-events: none; }
+  #scroll-hint-label { font-family: var(--type-mono); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(255,255,255,0.45); }
+  .mouse-icon { width: 22px; height: 34px; border: 1.5px solid rgba(255,255,255,0.25); border-radius: 11px; position: relative; }
+  .mouse-wheel { position: absolute; top: 7px; left: 50%; transform: translateX(-50%); width: 3px; height: 6px; background: rgba(255,255,255,0.55); border-radius: 2px; animation: wheel 2s ease-in-out infinite; }
+  @keyframes wheel { 0%,100% { opacity: 1; transform: translateX(-50%) translateY(0); } 65% { opacity: 0; transform: translateX(-50%) translateY(9px); } }
+
+  /* Editorial caption — a quiet anchor, like a photo credit */
+  #caption {
+    position: fixed; bottom: 30px; left: 30px; z-index: 10;
+    font-family: var(--type-mono); font-size: 10px; letter-spacing: 0.16em;
+    text-transform: uppercase; color: rgba(255,255,255,0.38); line-height: 1.7;
+  }
+  #caption b { color: rgba(255,255,255,0.6); font-weight: 500; }
+
+  /* ── Scroll driver ── */
+  #scroll-driver { position: relative; z-index: 2; height: 420vh; pointer-events: none; }
+
+  /* ── Content ── */
+  #content { position: relative; z-index: 3; pointer-events: none; }
+  .hero { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 0 24px; pointer-events: auto; }
+  .hero-eyebrow { font-family: var(--type-mono); font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 22px; opacity: 0; transform: translateY(8px); animation: fadeUp 1.1s 0.4s forwards; text-shadow: 0 1px 20px rgba(0,0,0,0.5); }
+  .hero-name { font-size: clamp(52px, 8.5vw, 108px); font-weight: 200; letter-spacing: -0.025em; line-height: 0.98; color: rgba(255,255,255,0.96); opacity: 0; transform: translateY(12px); animation: fadeUp 1.1s 0.65s forwards; text-shadow: 0 2px 40px rgba(0,0,0,0.45); }
+  .hero-name em { font-style: normal; color: #cde3e6; }
+  .hero-tagline { margin-top: 20px; font-size: clamp(14px, 2vw, 18px); font-weight: 300; color: rgba(255,255,255,0.6); letter-spacing: 0.01em; max-width: 460px; opacity: 0; transform: translateY(10px); animation: fadeUp 1.1s 0.9s forwards; text-shadow: 0 1px 24px rgba(0,0,0,0.5); }
+  @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+
+  .sea-section { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 80px 24px; pointer-events: auto; }
+  .sea-card { max-width: 540px; border: 0.5px solid rgba(255,255,255,0.14); border-radius: 18px; padding: 50px 42px; backdrop-filter: blur(16px) saturate(0.9); -webkit-backdrop-filter: blur(16px) saturate(0.9); background: rgba(8,16,20,0.42); }
+  .sea-card-label { font-family: var(--type-mono); font-size: 9px; letter-spacing: 0.24em; text-transform: uppercase; color: #9fc4c8; opacity: 0.8; margin-bottom: 18px; }
+  .sea-card h2 { font-size: clamp(28px, 4vw, 42px); font-weight: 200; letter-spacing: -0.02em; line-height: 1.12; color: rgba(255,255,255,0.92); margin-bottom: 18px; }
+  .sea-card p { font-size: 15px; line-height: 1.78; color: rgba(255,255,255,0.5); font-weight: 300; }
+
+  /* ── Control panel ── */
+  #controls {
+    position: fixed; top: 24px; right: 24px; z-index: 12;
+    width: 232px;
+    background: rgba(8, 16, 20, 0.55);
+    border: 0.5px solid rgba(255,255,255,0.14);
+    border-radius: 14px;
+    backdrop-filter: blur(18px) saturate(0.9); -webkit-backdrop-filter: blur(18px) saturate(0.9);
+    font-family: var(--type-mono);
+    overflow: hidden;
+  }
+  #controls-toggle {
+    width: 100%; display: flex; justify-content: space-between; align-items: center;
+    background: none; border: none; cursor: pointer;
+    padding: 14px 16px;
+    font-family: var(--type-mono); font-size: 9.5px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: rgba(255,255,255,0.7);
+  }
+  #controls-toggle span { color: rgba(255,255,255,0.4); font-size: 13px; line-height: 1; }
+  #controls-body { padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 15px; }
+  #controls.collapsed #controls-body { display: none; }
+
+  /* Presets */
+  .ctrl-presets { display: flex; flex-direction: column; gap: 9px; padding-bottom: 15px; border-bottom: 0.5px solid rgba(255,255,255,0.1); }
+  .presets-label { font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.6); }
+  .presets-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .preset {
+    background: rgba(255,255,255,0.06); border: 0.5px solid rgba(255,255,255,0.15);
+    border-radius: 7px; padding: 9px 6px; cursor: pointer;
+    font-family: var(--type-mono); font-size: 8.5px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: rgba(255,255,255,0.62); transition: background 0.2s, color 0.2s, border-color 0.2s;
+  }
+  .preset:hover { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.9); }
+  .preset.active { background: rgba(140,200,170,0.2); color: #cde3e6; border-color: rgba(140,200,170,0.4); }
+
+  .ctrl { display: flex; flex-direction: column; gap: 8px; }
+  .ctrl-row { display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.6); }
+  .ctrl-val { color: rgba(255,255,255,0.45); font-size: 10px; letter-spacing: 0.05em; }
+
+  /* Toggle switch */
+  .ctrl-toggle { flex-direction: row; align-items: center; justify-content: space-between; }
+  .ctrl-toggle span:first-child { font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.7); }
+  .switch { position: relative; display: inline-block; width: 34px; height: 18px; }
+  .switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+  .switch .track { position: absolute; inset: 0; border-radius: 9px; background: rgba(255,255,255,0.16); transition: background 0.2s; }
+  .switch .track::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #cde3e6; transition: transform 0.2s; }
+  .switch input:checked + .track { background: rgba(140,200,170,0.55); }
+  .switch input:checked + .track::after { transform: translateX(16px); }
+
+  /* dim the two sliders while the mouse is driving them */
+  #controls.mouse-on #s-intensity, #controls.mouse-on #s-height { opacity: 0.4; pointer-events: none; }
+  #controls.mouse-on #v-intensity::after, #controls.mouse-on #v-height::after { content: ' ◂ mouse'; color: #9fc4c8; }
+
+  input[type="range"] {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 2px;
+    background: rgba(255,255,255,0.2); border-radius: 2px; outline: none; cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none; width: 13px; height: 13px; border-radius: 50%;
+    background: #cde3e6; border: none; box-shadow: 0 1px 6px rgba(0,0,0,0.5);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 13px; height: 13px; border-radius: 50%; background: #cde3e6; border: none; cursor: pointer;
+  }
+
+  .ctrl-color { flex-direction: row; align-items: center; justify-content: space-between; }
+  .ctrl-color span { font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.6); }
+  input[type="color"] {
+    -webkit-appearance: none; appearance: none; width: 38px; height: 22px;
+    background: none; border: 0.5px solid rgba(255,255,255,0.25); border-radius: 5px; cursor: pointer; padding: 0;
+  }
+  input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
+  input[type="color"]::-webkit-color-swatch { border: none; border-radius: 3px; }
+  input[type="color"]::-moz-color-swatch { border: none; border-radius: 3px; }
+
+  .ctrl-buttons { display: flex; gap: 8px; margin-top: 2px; }
+  #ctrl-reset, #ctrl-copy {
+    flex: 1; background: rgba(255,255,255,0.06); border: 0.5px solid rgba(255,255,255,0.15);
+    border-radius: 7px; padding: 8px; cursor: pointer;
+    font-family: var(--type-mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: rgba(255,255,255,0.55); transition: background 0.2s, color 0.2s;
+  }
+  #ctrl-reset:hover, #ctrl-copy:hover { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.85); }
+  #ctrl-copy.copied { background: rgba(140,200,170,0.22); color: #c8e6d4; border-color: rgba(140,200,170,0.4); }
+
+  @media (max-width: 600px) { #controls { width: 200px; top: 16px; right: 16px; } }
+
+  #loading { position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center; background: #0a0f11; transition: opacity 0.9s; }
+  #loading.gone { opacity: 0; pointer-events: none; }
+  #loading span { font-family: var(--type-mono); font-size: 10px; letter-spacing: 0.25em; text-transform: uppercase; color: rgba(255,255,255,0.45); }
+
+  @media (prefers-reduced-motion: reduce) { .mouse-wheel { animation: none; } }
+
+</style>
+<style>
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #000;
+    --yellow: #f3d11e;
+    --grey: #8a8a8a;
+    --grey-2: #6f6f6f;
+    --panel: #e8f5fb;
+    --ink: #1a1a1a;
+    --ink-dim: #5a5a5a;
+    --font: 'Franklin Gothic Book', 'Helvetica Neue', Arial, 'Liberation Sans', sans-serif;
+    --font-demi: 'Franklin Gothic Demi', 'Franklin Gothic Medium', 'Helvetica Neue', Arial, sans-serif;
+    --maxw: 1180px;
+  }
+
+  html { scroll-behavior: smooth; }
+  body { background: var(--bg); color: #fff; font-family: var(--font); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+  a { text-decoration: none; color: inherit; }
+  img { display: block; max-width: 100%; }
+
+  /* ───────── Sticky nav ───────── */
+  .nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    height: 70px; display: flex; align-items: center;
+    background: rgba(109,207,246,0.72); backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .nav-inner { width: 100%; max-width: var(--maxw); margin: 0 auto; padding: 0 28px; display: flex; align-items: center; justify-content: space-between; }
+  .brand { font-family: var(--font-demi); font-size: 1.5rem; letter-spacing: -0.01em; color: #d8d8d8; }
+  .brand b { color: var(--yellow); font-weight: 700; }
+  .nav-links { display: flex; align-items: center; gap: 38px; }
+  .nav-links a { font-size: 0.86rem; color: var(--grey); transition: color 0.2s; }
+  .nav-links a:hover, .nav-links a.active { color: #e8e8e8; }
+  .contact-btn {
+    border: 1px solid rgba(255,255,255,0.25); background: #eef5f8; color: #1a1a1a !important;
+    padding: 11px 20px; border-radius: 7px; font-weight: 600; font-size: 0.84rem !important;
+    transition: background 0.2s, transform 0.2s;
+  }
+  .contact-btn:hover { background: #fff; transform: translateY(-1px); }
+  .nav-toggle { display: none; background: none; border: none; color: #ccc; font-size: 1.25rem; cursor: pointer; }
+
+  /* ───────── Views ───────── */
+  main { padding-top: 70px; }
+  .view { display: none; }
+  .view.is-active { display: block; animation: viewFade 0.4s ease; }
+  @keyframes viewFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 28px; }
+
+  /* ───────── Hero ───────── */
+  .hero { padding: 92px 0 70px; }
+  .hero-grid { display: flex; align-items: flex-start; gap: 56px; flex-wrap: wrap; }
+  .hero-left { padding-top: 6px; }
+  .hero-title { font-family: var(--font-demi); font-weight: 700; font-size: clamp(40px, 6vw, 70px); color: #7c7c7c; line-height: 1; letter-spacing: -0.01em; }
+  .hero-title .bar { color: var(--yellow); font-weight: 400; margin: 0 2px; }
+  .hero-by { display: block; text-align: right; margin-top: 8px; font-family: var(--font-demi); font-weight: 700; font-size: 0.95rem; color: #9c9268; }
+  .hero-tag { font-size: clamp(20px, 2.6vw, 30px); color: #8f8f8f; line-height: 1.32; font-weight: 400; padding-top: 6px; }
+
+  /* ───────── Case studies (home) ───────── */
+  .cs-heading { font-size: 1.7rem; color: #8f8f8f; font-weight: 400; margin: 26px 0 30px; }
+
+  .cs-card { display: grid; grid-template-columns: 1.05fr 1fr; gap: 30px; align-items: center; margin-bottom: 62px; }
+  .cs-media { display: flex; align-items: center; justify-content: center; min-height: 150px; }
+  .cs-media img { width: 100%; height: auto; object-fit: contain; }
+  .cs-card.is-link .cs-media { cursor: pointer; transition: transform 0.35s ease; }
+  .cs-card.is-link:hover .cs-media { transform: translateY(-4px) scale(1.01); }
+
+  .cs-panel { background: var(--panel); color: var(--ink); border-radius: 12px; padding: 30px 34px; }
+  .cs-eyebrow { font-family: var(--font-demi); font-weight: 700; font-size: 1.02rem; color: #111; margin-bottom: 14px; }
+  .cs-title { font-family: var(--font-demi); font-weight: 700; font-size: 1.06rem; color: #111; margin-bottom: 14px; }
+  .cs-body { font-size: 0.92rem; line-height: 1.6; color: #4f4f4f; margin-bottom: 18px; max-width: 42ch; }
+  .cs-link { display: inline-flex; align-items: center; gap: 8px; font-size: 0.9rem; color: #111; font-weight: 500; margin-bottom: 22px; transition: gap 0.2s; }
+  .cs-card.is-link:hover .cs-link { gap: 14px; }
+  .cs-role { font-family: var(--font-demi); font-weight: 700; font-size: 0.96rem; color: #111; margin-bottom: 16px; }
+  .cs-tech { display: flex; align-items: center; gap: 16px; }
+  .cs-tech i { font-size: 2rem; }
+  .fa-css3-alt { color: #1572b6; }
+  .fa-square-js { color: #f7df1e; }
+  .fa-html5 { color: #e34f26; }
+  .fa-figma { color: #a259ff; }
+  .figma-mark { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-demi); font-weight: 700; font-size: 1.5rem; color: #111; }
+  .adobe { width: 36px; height: 36px; border-radius: 7px; display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-demi); font-weight: 700; font-size: 0.92rem; }
+  .ps { background: #001e36; color: #31a8ff; border: 1px solid #31a8ff; }
+  .ai { background: #2a1400; color: #ff9a00; border: 1px solid #ff9a00; }
+
+  /* ───────── Case study views (page images) ───────── */
+  .case-view { padding: 8px 0 80px; }
+  .case-wrap { max-width: 1432px; margin: 0 auto; }
+  .case-wrap img { width: 100%; height: auto; }
+  .case-back {
+    position: fixed; left: 22px; bottom: 22px; z-index: 90;
+    display: inline-flex; align-items: center; gap: 9px;
+    background: rgba(20,20,20,0.85); color: #eaeaea; border: 1px solid rgba(255,255,255,0.14);
+    padding: 11px 18px; border-radius: 999px; font-size: 0.82rem; backdrop-filter: blur(8px);
+    transition: background 0.2s, transform 0.2s; cursor: pointer;
+  }
+  .case-back:hover { background: rgba(40,40,40,0.95); transform: translateY(-2px); }
+
+  /* ───────── Footer ───────── */
+  .site-foot { border-top: 1px solid rgba(255,255,255,0.06); padding: 40px 0; text-align: center; color: #5a5a5a; font-size: 0.82rem; }
+
+  /* ───────── Responsive ───────── */
+  @media (max-width: 860px) {
+    .nav-links { gap: 20px; }
+    .nav-links a:not(.contact-btn) { display: none; }
+    .nav-toggle { display: inline-block; }
+    .nav-links.open a:not(.contact-btn) { display: block; }
+    .nav-links.open { position: absolute; top: 70px; right: 0; left: 0; flex-direction: column; align-items: flex-start; gap: 0; background: rgba(0,0,0,0.95); padding: 8px 28px 16px; }
+    .nav-links.open a { padding: 12px 0; width: 100%; }
+    .hero-grid { gap: 26px; }
+    .hero-by { text-align: left; }
+    .cs-card { grid-template-columns: 1fr; gap: 18px; }
+    .cs-media { order: -1; }
+  }
+  @media (max-width: 520px) {
+    .wrap, .nav-inner { padding: 0 18px; }
+    .cs-panel { padding: 24px 22px; }
+  }
+
+</style>
+<style>
+
+:root{--book:'Franklin Gothic Book','Libre Franklin','Helvetica Neue',Arial,sans-serif;
+      --demi:'Franklin Gothic Demi','Libre Franklin','Helvetica Neue',Arial,sans-serif;}
+html,body{background:transparent;}
+body{background:#06121a;color:#eaf2f5;font-family:var(--book);overflow-x:hidden;}
+#stage{position:fixed;inset:0;z-index:0;}
+#gl{position:absolute;inset:0;width:100%;height:100%;display:block;}
+#grade{position:fixed;inset:0;z-index:1;pointer-events:none;}
+#controls{z-index:120;top:84px;}
+@media(max-width:600px){#controls{top:74px;left:12px;right:12px;}}
+#scroll-hint{display:none!important;}
+#loading{z-index:400;}
+.nav{z-index:200;}
+main{position:relative;z-index:3;}
+.view,.case-view,#view-home{background:transparent!important;}
+/* homepage panels -> frosted glass so ocean shows through */
+.cs-panel{background:rgba(233,245,251,0.90)!important;backdrop-filter:blur(7px) saturate(1.1);
+  -webkit-backdrop-filter:blur(7px) saturate(1.1);box-shadow:0 14px 44px rgba(0,0,0,.42);}
+.cs-heading{color:#dcebef!important;text-shadow:0 2px 16px rgba(0,0,0,.55);}
+.hero-title{color:#a6bcc3!important;text-shadow:0 2px 24px rgba(0,0,0,.6);}
+.hero-tag{color:#d3e3e9!important;text-shadow:0 2px 16px rgba(0,0,0,.55);}
+.hero-by{text-shadow:0 1px 12px rgba(0,0,0,.7);}
+.brand,.brand *{text-shadow:0 1px 10px rgba(0,0,0,.5);}
+.site-foot{color:#9fb4c0!important;}
+/* case study positioned canvas */
+.case-view{padding:90px 0 70px;display:flex;justify-content:center;}
+.case-scale{position:relative;margin:0 auto;transform-origin:top center;}
+.case-canvas{position:relative;transform-origin:top left;}
+.case-canvas .case-img{position:absolute;left:0;top:0;width:1731px;height:9666px;pointer-events:none;user-select:none;}
+.case-canvas .t{position:absolute;white-space:nowrap;line-height:1;letter-spacing:.1px;
+  text-shadow:0 1px 6px rgba(0,0,0,.9),0 0 2px rgba(0,0,0,.7);outline:none;}
+.case-back{z-index:210;}
+
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="gl"></canvas></div>
+<div id="grade"></div>
+
+
+<div id="controls">
+  <button id="controls-toggle" aria-expanded="true">Sea controls <span>–</span></button>
+  <div id="controls-body">
+    <div class="ctrl-presets">
+      <span class="presets-label">Presets</span>
+      <div class="presets-grid">
+        <button type="button" class="preset active" data-preset="overcast">Overcast</button>
+        <button type="button" class="preset" data-preset="dawn">Calm Dawn</button>
+        <button type="button" class="preset" data-preset="golden">Golden Hour</button>
+        <button type="button" class="preset" data-preset="storm">Storm</button>
+        <button type="button" class="preset" data-preset="noon">Clear Noon</button>
+        <button type="button" class="preset" data-preset="dusk">Dusk</button>
+      </div>
+    </div>
+    <label class="ctrl ctrl-toggle">
+      <span>Mouse drives waves</span>
+      <span class="switch"><input type="checkbox" id="t-mouse"><span class="track"></span></span>
+    </label>
+    <label class="ctrl">
+      <span class="ctrl-row"><span>Wave intensity</span><span class="ctrl-val" id="v-intensity">1.00</span></span>
+      <input type="range" id="s-intensity" min="0" max="2" step="0.01" value="1">
+    </label>
+    <label class="ctrl">
+      <span class="ctrl-row"><span>Wave height</span><span class="ctrl-val" id="v-height">1.00</span></span>
+      <input type="range" id="s-height" min="0" max="2.5" step="0.01" value="1">
+    </label>
+    <label class="ctrl">
+      <span class="ctrl-row"><span>Wind direction</span><span class="ctrl-val" id="v-wind">26°</span></span>
+      <input type="range" id="s-wind" min="0" max="360" step="1" value="26">
+    </label>
+    <label class="ctrl">
+      <span class="ctrl-row"><span>Foam amount</span><span class="ctrl-val" id="v-foam">1.00</span></span>
+      <input type="range" id="s-foam" min="0" max="2" step="0.01" value="1">
+    </label>
+    <label class="ctrl">
+      <span class="ctrl-row"><span>Warmth</span><span class="ctrl-val" id="v-warmth">0.00</span></span>
+      <input type="range" id="s-warmth" min="0" max="1" step="0.01" value="0">
+    </label>
+    <label class="ctrl ctrl-color">
+      <span>Wave color</span>
+      <input type="color" id="c-wave" value="#579cb7">
+    </label>
+    <label class="ctrl ctrl-color">
+      <span>Sky color</span>
+      <input type="color" id="c-sky" value="#31bbf2">
+    </label>
+    <div class="ctrl-buttons">
+      <button id="ctrl-reset">Reset</button>
+      <button id="ctrl-copy">Copy settings</button>
+    </div>
+  </div>
+</div>
+
+
+<div id="scroll-hint">
+  <div id="scroll-hint-label">Scroll</div>
+  <div class="mouse-icon"><div class="mouse-wheel"></div></div>
+</div>
+
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="#/" data-link><b>Systemblue</b> New&nbsp;Media</a>
+    <button class="nav-toggle" id="navToggle" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
+    <nav class="nav-links" id="navLinks">
+      <a href="#/case-studies" data-link>Case studies</a>
+      <a href="#/" data-link>Personal projects</a>
+      <a class="contact-btn" href="mailto:hello@systemblue.example">Contact me</a>
+    </nav>
+  </div>
+</header>
+<main>
+<section id="view-home" class="view">
+    <div class="wrap">
+      <div class="hero">
+        <div class="hero-grid">
+          <div class="hero-left">
+            <h1 class="hero-title">UX<span class="bar">|</span>UI&nbsp;Design</h1>
+            <span class="hero-by">by Sandy Isaacs</span>
+          </div>
+          <p class="hero-tag">Intuitive interfaces<br>that drive measurable results</p>
+        </div>
+      </div>
+
+      <h2 class="cs-heading" id="case-studies">Case studies</h2>
+
+      <!-- Card 1 — WorkSafeBC -->
+      <a class="cs-card is-link" href="#/case-studies/worksafebc" data-link>
+        <div class="cs-media"><img height="555" src="images/dev-phones.png" alt="WorkSafeBC Prohibited Action Complaint app on three phones"></div>
+        <div class="cs-panel">
+          <div class="cs-eyebrow">WorkSafeBC</div>
+          <div class="cs-title">Prohibited Action Complaint, responsive app</div>
+          <p class="cs-body">WorkSafeBC provides information and services to prevent workplace injuries, diseases and deaths in BC. The Prohibited Action Complaint application allows workers to report misconduct by employers or unions.</p>
+          <span class="cs-link">View case study <i class="fa-solid fa-arrow-right"></i></span>
+          <div class="cs-role">UI&nbsp;|&nbsp;UX Designer</div>
+          <div class="cs-tech">
+            <i class="fa-brands fa-css3-alt" title="CSS3"></i>
+            <i class="fa-brands fa-square-js" title="JavaScript"></i>
+            <i class="fa-brands fa-html5" title="HTML5"></i>
+            <span class="figma-mark"><i class="fa-brands fa-figma"></i>Figma</span>
+          </div>
+        </div>
+      </a>
+
+      <!-- Card 2 — NuData Security -->
+      <a class="cs-card is-link" href="#/case-studies/nudetect" data-link>
+        <div class="cs-media"><img height="555" src="images/dev-laptop.png" alt="NuData Security dashboard on a laptop"></div>
+        <div class="cs-panel">
+          <div class="cs-eyebrow">NuData Security, a Mastercard company</div>
+          <div class="cs-title">Dashboard and data visualisations</div>
+          <p class="cs-body">NuData Security is a critical element of the Mastercard Cyber and Intelligence business which is helping to create a secure and inclusive digital future with a range of identity, cyber and AI technologies.</p>
+          <span class="cs-link">View case study <i class="fa-solid fa-arrow-right"></i></span>
+          <div class="cs-role">UI Designer</div>
+          <div class="cs-tech">
+            <span class="adobe ps">Ps</span>
+            <span class="adobe ai">Ai</span>
+          </div>
+        </div>
+      </a>
+
+      <!-- Card 3 — Bodog -->
+      <div class="cs-card">
+        <div class="cs-media"><img height="555" src="images/dev-tv.png" alt="Bodog logo on a television"></div>
+        <div class="cs-panel">
+          <div class="cs-eyebrow">Bodog</div>
+          <div class="cs-title">Visual ID</div>
+          <p class="cs-body">The Bodog Sportsbook offers the latest NFL Odds, NBA betting options, a huge variety of NHL odds, the best MLB odds and Super Bowl in Canada.</p>
+          <div class="cs-role">Graphic Designer</div>
+          <div class="cs-tech">
+            <span class="adobe ps">Ps</span>
+            <span class="adobe ai">Ai</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="site-foot">© <span id="yr"></span> Systemblue New Media · UX | UI Design by Sandy Isaacs</footer>
+  </section>
+<section id="view-worksafebc" class="view case-view">
+  <div class="case-scale"><div class="case-canvas" style="width:1731px;height:9666px"><img class="case-img" src="case-worksafebc-img.png" alt=""><span class="t" style="left:249.4px;top:237.9px;font-size:41.7px;color:#d7dee1;font-weight:400;font-family:var(--book)">Prohibited Action Complaints</span><span class="t" style="left:249.4px;top:293.3px;font-size:27.8px;color:#f4f6f7;font-weight:600;font-family:var(--demi)">The Client</span><span class="t" style="left:249.4px;top:348.2px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">WorkSafeBC was established by provincial legislation as an agency with the</span><span class="t" style="left:249.4px;top:369.8px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">mandate to oversee a no-fault insurance system for the workplace.</span><span class="t" style="left:249.4px;top:413.0px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">WorkSafeBC partners with employers and workers in B.C. to do the following:</span><span class="t" style="left:249.4px;top:434.5px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">• Promote the prevention of workplace injury, illness, and disease</span><span class="t" style="left:279.4px;top:456.1px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">Rehabilitate those who are injured, and provide timely return to work</span><span class="t" style="left:249.4px;top:477.7px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">• Provide fair compensation to replace workers&#x27; loss of wages while</span><span class="t" style="left:279.4px;top:499.3px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">recovering from injuries</span><span class="t" style="left:249.4px;top:520.8px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">• Ensure sound financial management for a viable workers&#x27; compensation</span><span class="t" style="left:279.4px;top:542.4px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">system</span><span class="t" style="left:249.2px;top:727.4px;font-size:27.8px;color:#f4f6f7;font-weight:600;font-family:var(--demi)">The project</span><span class="t" style="left:249.2px;top:782.4px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">Prohibited Action Complaints</span><span class="t" style="left:249.2px;top:803.9px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">If you are a worker who becomes aware of unsafe or unhealthy conditions at</span><span class="t" style="left:249.2px;top:825.5px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">the workplace and report it to your employer, your union, or WorkSafeBC, you</span><span class="t" style="left:249.2px;top:847.1px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">are raising a health or safety issue. If you do so, you are legally exercising a</span><span class="t" style="left:249.2px;top:868.7px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">right or carrying out a duty under the Workers Compensation Act.</span><span class="t" style="left:249.2px;top:911.8px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">IItt iiss iilllleeggaall ffoorr aann eemmppllooyyeerr oorr uunniioonn ttoo ppeennaalliizzee yyoouu ffoorr rraaiissiinngg aa hheeaalltthh oorr</span><span class="t" style="left:249.2px;top:933.4px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">safety issue at work. If you experience negative actions from your employer or</span><span class="t" style="left:249.2px;top:955.0px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">union after raising a health and safety concern, you can submit a prohibited</span><span class="t" style="left:249.2px;top:976.5px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">action complaint.</span><span class="t" style="left:249.4px;top:2028.7px;font-size:41.7px;color:#d7dee1;font-weight:400;font-family:var(--book)">Design brief</span><span class="t" style="left:249.4px;top:2086.4px;font-size:27.8px;color:#f4f6f7;font-weight:600;font-family:var(--demi)">Problem:</span><span class="t" style="left:863.1px;top:2086.1px;font-size:27.8px;color:#f4f6f7;font-weight:600;font-family:var(--demi)">Solution:</span><span class="t" style="left:249.4px;top:2134.2px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">UUssiinngg tthhee eexxiissttiinngg pprroocceessss bbootthh wwoorrkkeerrss aanndd eemmppllooyyeerrss wwoouulldd ffaaccee</span><span class="t" style="left:863.1px;top:2133.8px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">DDeessiiggnn aa rreessppoonnssiivvee oonnlliinnee ccoommppllaaiinntt ffoorrmm tthhaatt wwoorrkkeerrss ffiinndd eeaassyy ttoo ccoommpplleettee</span><span class="t" style="left:249.4px;top:2155.7px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">significant challenges navigating the complaint process. Workers who filed</span><span class="t" style="left:863.1px;top:2155.4px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">and understand as well as a prescreening questionnaire that sets</span><span class="t" style="left:249.4px;top:2177.3px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">a grievance often complained about ambiguity of where they were in the</span><span class="t" style="left:863.1px;top:2177.0px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">expectations about the complaint process. We will also design an online</span><span class="t" style="left:249.4px;top:2198.9px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">process , what resources where available to them and what to expect next. portal that both workers and employers can use as a hub for communication</span><span class="t" style="left:249.4px;top:2220.5px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">Employers also expressed frustration with a lack of information about the</span><span class="t" style="left:863.1px;top:2220.1px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">with WorkSafeBC about the ongoing status of their complaint as well as</span><span class="t" style="left:249.4px;top:2242.0px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">status of a complaint and access to documentation. Additionally the case</span><span class="t" style="left:863.1px;top:2241.7px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">upload documents and evidence.</span><span class="t" style="left:249.4px;top:2263.6px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">workers struggled to manage and categorize submissions from workers</span><span class="t" style="left:249.4px;top:2285.2px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">and employers.</span><span class="t" style="left:250.6px;top:2379.1px;font-size:27.8px;color:#f4f6f7;font-weight:600;font-family:var(--demi)">Design Process</span><span class="t" style="left:249.8px;top:3136.2px;font-size:41.7px;color:#d7dee1;font-weight:400;font-family:var(--book)">Empathize:</span><span class="t" style="left:249.8px;top:3169.8px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">Competitive analysis, user interviews, user personas, key findings</span><span class="t" style="left:249.7px;top:3256.5px;font-size:27.8px;color:#f4f6f7;font-weight:600;font-family:var(--demi)">Competitive analysis</span><span class="t" style="left:863.3px;top:3256.5px;font-size:27.8px;color:#f4f6f7;font-weight:600;font-family:var(--demi)">User interviews</span><span class="t" style="left:249.7px;top:3301.8px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">I undertook a survey of how other insurance agencies tackled</span><span class="t" style="left:863.3px;top:3311.4px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">WWee ccoonndduucctteedd uusseerr iinntteerrvviieewwss wwiitthh wwoorrkkeerrss aanndd eemmppllooyyeerrss aass wweellll aass ssttaaffff</span><span class="t" style="left:249.7px;top:3323.4px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">similar problems to understand their strengths and weakness and</span><span class="t" style="left:863.3px;top:3333.0px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">at WorkSafeBC to understand pain points and frustrations with the existing</span><span class="t" style="left:249.7px;top:3344.9px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">identify strategies for how we could approach the problem.</span><span class="t" style="left:863.3px;top:3354.5px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">process. Patterns would soon emerge that we could target as chief</span><span class="t" style="left:863.3px;top:3376.1px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">candidates for improvement in our design. Through walkthroughs of the</span><span class="t" style="left:863.3px;top:3397.7px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">entire complaint process we created journey maps to understand and track</span><span class="t" style="left:863.3px;top:3419.3px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">the complete business flow from end to end.. This would be used to identify</span><span class="t" style="left:863.3px;top:3440.8px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">opportunities for streamlining and optimising the business process through</span><span class="t" style="left:863.3px;top:3462.4px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">design andautomation.</span><span class="t" style="left:249.4px;top:4277.7px;font-size:27.8px;color:#f4f6f7;font-weight:600;font-family:var(--demi)">User personas</span><span class="t" style="left:866.0px;top:4328.6px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">By regularly cross-referencing these personas I ensured that the design After conducting interviews we created user personas based on archetype of</span><span class="t" style="left:866.0px;top:4350.2px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">stayed relevant to the intended audience. the people involved. These personas could be used as a sounding board for</span><span class="t" style="left:249.4px;top:4375.7px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">the prototypes that were to be created, and help guide decisions during the</span><span class="t" style="left:249.4px;top:4397.3px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">design and ideation phase.</span><span class="t" style="left:249.0px;top:5616.6px;font-size:41.7px;color:#d7dee1;font-weight:400;font-family:var(--book)">Definition</span><span class="t" style="left:249.0px;top:5695.9px;font-size:27.8px;color:#f4f6f7;font-weight:600;font-family:var(--demi)">User journeys, Site map</span><span class="t" style="left:249.0px;top:5743.7px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">UUsseerr jjoouurrnneeyyss wweerree ccrreeaatteedd ffoorr wwoorrkkeerrss aanndd ssttaaffff aatt WWoorrkkSSaaffeeBBCC ttoo mmaapp oouutt</span><span class="t" style="left:249.0px;top:5765.2px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">the business flow of the current state and desired future state in conjunction</span><span class="t" style="left:249.0px;top:5786.8px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">with the Dev team. With the project goals in mind of consolidating the entire</span><span class="t" style="left:249.0px;top:5808.4px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">complaint process into an online submission and portal site controlled</span><span class="t" style="left:249.0px;top:5830.0px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">through a Microsoft Dynamics 365 backend, we identified opportunities for</span><span class="t" style="left:249.0px;top:5851.5px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">automation and improvement for the overall user experience.</span><span class="t" style="left:866.0px;top:6164.6px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">Site maps were created based on the desired future state that would provide</span><span class="t" style="left:866.0px;top:6186.2px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">the necessary functionality to achieve the project goals. A modular</span><span class="t" style="left:866.0px;top:6207.7px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">architecture was identified as offering the most flexibility and usefulness to</span><span class="t" style="left:866.0px;top:6229.3px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">stakeholders.</span><span class="t" style="left:252.4px;top:6566.2px;font-size:41.7px;color:#d7dee1;font-weight:400;font-family:var(--book)">Ideation</span><span class="t" style="left:252.4px;top:6645.5px;font-size:27.8px;color:#f4f6f7;font-weight:600;font-family:var(--demi)">Wire frames, mock ups, functional prototypes</span><span class="t" style="left:252.4px;top:6693.3px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">Low fidelity wireframes are created to quickly conceptualize how the site</span><span class="t" style="left:252.4px;top:6714.8px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">maps would come to life on both mobile and desktop screens. Pages can be</span><span class="t" style="left:252.4px;top:6736.4px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">organized based on content and structure begins to take shape. The</span><span class="t" style="left:252.4px;top:6758.0px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">wireframes take on the aspect of an architectural plan.</span><span class="t" style="left:250.6px;top:7170.2px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">Mockups start to tackle the objective of combining content, branding and</span><span class="t" style="left:250.6px;top:7191.8px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">usability. We can identify usability issues by using different UI patterns and</span><span class="t" style="left:250.6px;top:7213.4px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">components while keeping in mind and referring to our User Personas.</span><span class="t" style="left:250.6px;top:7235.0px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">Content copy is also fine tuned by the business and UX designer to ensure it</span><span class="t" style="left:250.6px;top:7256.5px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">is accurate and understandable to the user.</span><span class="t" style="left:865.5px;top:7262.3px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">Once mockups have been stabilized we can move on to create functional</span><span class="t" style="left:865.5px;top:7283.8px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">prototypes using HTML, CSS, and JavaScript to give a high fidelity experience</span><span class="t" style="left:865.5px;top:7305.4px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">during user testing and ensure that the development team can easily and</span><span class="t" style="left:865.5px;top:7327.0px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">accurately implement the design.</span><span class="t" style="left:251.0px;top:8743.1px;font-size:27.8px;color:#f4f6f7;font-weight:600;font-family:var(--demi)">Testing</span><span class="t" style="left:866.0px;top:8747.0px;font-size:27.8px;color:#f4f6f7;font-weight:600;font-family:var(--demi)">Revision and Hand off</span><span class="t" style="left:866.0px;top:8794.8px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">Armed with insights from user testing the prototype is tweaked and prepared TThhee pprroottoottyyppeess aarree tteesstteedd aaggaaiinnsstt rreelleevvaanntt uusseerr.. TThhee rreeccrruuiittmmeenntt ccrriitteerriiaa</span><span class="t" style="left:251.0px;top:8819.6px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">includes naive as well as experienced user, employers as well as third party for hand-off to the dev team. During this phase frequent check-ins are</span><span class="t" style="left:866.0px;top:8837.9px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">required with the developers to ensure that the applications are consistent representatives. They will often relate issues they had in the past using the</span><span class="t" style="left:866.0px;top:8859.5px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">with the design as a form of quality control. existing system and given the opportunity to give their subjective opinion on</span><span class="t" style="left:251.0px;top:8884.3px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">the new interface. Watching users interact with the new UI is an opportunity</span><span class="t" style="left:251.0px;top:8905.9px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">to see it with fresh eyes and identify blind spots. Often times this leads to</span><span class="t" style="left:251.0px;top:8927.4px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">fine tuning and rethinking certain strategies.</span></div></div>
+</section>
+<section id="view-nudetect" class="view case-view">
+  <div class="case-scale"><div class="case-canvas" style="width:1731px;height:9666px"><img class="case-img" src="case-nudetect-img.png" alt=""><span class="t" style="left:249.8px;top:238.1px;font-size:41.7px;color:#d7dee1;font-weight:400;font-family:var(--book)">NuDetect Dashboard UI/UX</span><span class="t" style="left:247.2px;top:293.5px;font-size:27.8px;color:#f4f6f7;font-weight:600;font-family:var(--demi)">The Client</span><span class="t" style="left:249.9px;top:350.1px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">NuDetect by NuData Security, a Mastercard® company uses behavioral</span><span class="t" style="left:249.9px;top:371.7px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">analytics and passive biometrics to identify good (digital) users in real-time</span><span class="t" style="left:249.9px;top:393.2px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">with confidence, without adding friction—assessing hundreds of device,</span><span class="t" style="left:249.9px;top:414.8px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">location, passive biometric and behavioral signals against past user behavior</span><span class="t" style="left:249.9px;top:436.4px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">and known behaviors.</span><span class="t" style="left:249.9px;top:458.0px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">The dashboard provides robust investigative tools and data visualizations for</span><span class="t" style="left:249.9px;top:479.5px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">analyst.</span><span class="t" style="left:248.8px;top:768.0px;font-size:27.8px;color:#f4f6f7;font-weight:600;font-family:var(--demi)">The project</span><span class="t" style="left:249.8px;top:824.6px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">NuDetect is NuData Security’s flagship behavioral biometrics platform, The project focused on improving data visualization, investigation</span><span class="t" style="left:249.8px;top:846.2px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">designed to help organizations identify legitimate users and detect workflows, and usability across high-volume monitoring environments.</span><span class="t" style="left:249.8px;top:867.7px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">fraudulent activity based on how people interact online. As part of the UX Through user research, workflow analysis, wireframing, prototyping, and</span><span class="t" style="left:249.8px;top:889.3px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">design team, I contributed to the redesign and enhancement of the usability testing, we created a more intuitive experience that enabled</span><span class="t" style="left:249.8px;top:910.9px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">NuDetect dashboard, transforming complex risk analysis data into analysts to identify threats faster, reduce investigation time, and make</span><span class="t" style="left:249.8px;top:932.5px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">actionable insights for fraud analysts and security teams.</span><span class="t" style="left:867.8px;top:932.5px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">more confident risk-based decisions.</span><span class="t" style="left:249.4px;top:1951.5px;font-size:41.7px;color:#d7dee1;font-weight:400;font-family:var(--book)">Design process</span><span class="t" style="left:248.3px;top:2801.2px;font-size:41.7px;color:#d7dee1;font-weight:400;font-family:var(--book)">Research</span><span class="t" style="left:252.9px;top:2862.4px;font-size:27.8px;color:#f4f6f7;font-weight:600;font-family:var(--demi)">Competitive analysis</span><span class="t" style="left:865.8px;top:2915.0px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">By documenting strengths, weaknesses, and recurring design patterns, I TToo iinnffoorrmm tthhee ddeessiiggnn ooff aa ddaattaa vviissuuaalliizzaattiioonn ddaasshhbbooaarrdd,, II ccoonndduucctteedd aa</span><span class="t" style="left:252.9px;top:2938.9px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">competitive UX analysis of leading analytics, fraud detection, identified opportunities to improve usability, reduce cognitive load, and</span><span class="t" style="left:865.8px;top:2958.1px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">support faster decision-making. The analysis revealed best practices for cybersecurity, and business intelligence platforms. I evaluated each</span><span class="t" style="left:865.8px;top:2979.7px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">presenting complex datasets, highlighting anomalies, and enabling users product&#x27;s information architecture, navigation patterns, data visualization</span><span class="t" style="left:252.9px;top:3003.6px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">techniques, filtering mechanisms, alert systems, and investigation to move efficiently from high-level insights to detailed investigations. These</span><span class="t" style="left:865.8px;top:3022.8px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">findings directly influenced dashboard layout, interaction design, workflows.</span><span class="t" style="left:865.8px;top:3044.4px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">prioritization of key metrics, and the overall user experience strategy.</span><span class="t" style="left:252.9px;top:3821.4px;font-size:27.8px;color:#f4f6f7;font-weight:600;font-family:var(--demi)">User research and personas</span><span class="t" style="left:252.9px;top:3876.4px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">TToo bbeetttteerr uunnddeerrssttaanndd tthhee nneeeeddss ooff ffrraauudd aannaallyyssttss,, sseeccuurriittyy iinnvveessttiiggaattoorrss,, I analyzed recurring patterns across participants and translated these</span><span class="t" style="left:252.9px;top:3897.9px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">and risk management teams, I planned and conducted stakeholder and findings into detailed user personas that represented key user groups,</span><span class="t" style="left:252.9px;top:3919.5px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">user interviews focused on how organizations use NuData’s behavioral their motivations, challenges, technical expertise, and operational needs.</span><span class="t" style="left:252.9px;top:3941.1px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">biometrics platform to identify legitimate users and detect fraudulent These personas became foundational design tools that guided product</span><span class="t" style="left:252.9px;top:3962.7px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">activity. Through structured interviews, workflow mapping, and synthesis strategy, dashboard design, feature prioritization, and usability</span><span class="t" style="left:252.9px;top:3984.2px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">sessions, I gathered insights into users&#x27; goals, decision-making processes, improvements throughout the development of the NuDetect platform.</span><span class="t" style="left:252.9px;top:4005.8px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">pain points, and reporting requirements.</span><span class="t" style="left:248.3px;top:5833.3px;font-size:41.7px;color:#d7dee1;font-weight:400;font-family:var(--book)">Wireframes</span><span class="t" style="left:249.0px;top:5929.7px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">Building on insights gathered from user interviews and personas, I led the The wireframes focused on helping fraud analysts quickly identify</span><span class="t" style="left:249.0px;top:5951.3px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">ideation and wireframing process for NuData&#x27;s behavioral biometrics</span><span class="t" style="left:867.8px;top:5951.3px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">suspicious activity, investigate behavioral signals, and take action with</span><span class="t" style="left:249.0px;top:5972.8px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">platform. I facilitated collaborative design workshops and explored</span><span class="t" style="left:867.8px;top:5972.8px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">minimal cognitive load. By iterating on concepts with stakeholders and</span><span class="t" style="left:249.0px;top:5994.4px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">multiple concepts for dashboard layouts, investigation workflows, risk</span><span class="t" style="left:867.8px;top:5994.4px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">incorporating user feedback throughout the design process, I established</span><span class="t" style="left:249.0px;top:6016.0px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">scoring visualizations, and alert management experiences. Through rapid a scalable foundation that informed high-fidelity prototypes and the final</span><span class="t" style="left:249.0px;top:6037.6px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">sketching and low-fidelity wireframes, I translated complex user</span><span class="t" style="left:867.8px;top:6037.6px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">NuDetect user experience.</span><span class="t" style="left:249.0px;top:6059.1px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">requirements into clear information architecture and intuitive user flows.</span><span class="t" style="left:248.3px;top:6891.3px;font-size:41.7px;color:#d7dee1;font-weight:400;font-family:var(--book)">Prototypes</span><span class="t" style="left:248.8px;top:6969.9px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">As the UI designer for NuData&#x27;s behavioral biometrics platform, I Using interactive prototypes, I validated design concepts, demonstrated</span><span class="t" style="left:248.8px;top:6991.4px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">transformed wireframes and user requirements into polished, high-fidelity end-to-end user journeys, and gathered feedback before development,</span><span class="t" style="left:248.8px;top:7013.0px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">mockups and interactive prototypes. I designed a modern, data-driven helping reduce implementation risk and ensuring the final NuDetect</span><span class="t" style="left:248.8px;top:7034.6px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">interface that balanced complex security analytics with clarity and usability, experience was both visually engaging and highly effective for security</span><span class="t" style="left:248.8px;top:7056.2px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">ensuring fraud analysts could quickly interpret behavioral risk signals and operations teams.</span><span class="t" style="left:248.8px;top:7077.7px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">investigate suspicious activity. Working closely with product managers,</span><span class="t" style="left:248.8px;top:7099.3px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">developers, and stakeholders, I established visual design standards,</span><span class="t" style="left:248.8px;top:7120.9px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">created reusable UI components, and refined dashboard layouts, charts,</span><span class="t" style="left:248.8px;top:7142.5px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">tables, and investigation workflows.</span></div></div>
+</section>
+</main>
+<a class="case-back" id="caseBack" href="#/case-studies" data-link style="display:none">
+  <i class="fa-solid fa-arrow-left"></i> Case studies
+</a>
+<div id="loading"><span>Raising the sea…</span></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  const canvas = document.getElementById('gl');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
+  // Pixel ratio capped at 1.0 — the single biggest perf lever. Water fills the screen,
+  // so fewer pixels = large GPU savings with little visible change on a soft, hazy scene.
+  const DPR = Math.min(window.devicePixelRatio, 1.0);
+  renderer.setPixelRatio(DPR);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+
+  
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(56, window.innerWidth / window.innerHeight, 0.5, 30000);
+
+  // Live-adjustable parameters (driven by the control panel)
+  const DEFAULTS = { intensity: 1.0, height: 1.0, wind: 26, foam: 1.0, warmth: 0.0, waveColor: '#579cb7', skyColor: '#31bbf2' };
+  const params = Object.assign({}, DEFAULTS);
+
+  /* ─────────────────────────────────────────────
+     SHARED GLSL — noise + overcast sky model
+     The sky function is sampled by BOTH the sky dome
+     and the water reflection, so they always agree.
+  ───────────────────────────────────────────── */
+  const COMMON = `
+    float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+    float vnoise(vec2 p){
+      vec2 i = floor(p), f = fract(p);
+      vec2 u = f*f*(3.0-2.0*f);
+      return mix(mix(hash(i), hash(i+vec2(1,0)), u.x),
+                 mix(hash(i+vec2(0,1)), hash(i+vec2(1,1)), u.x), u.y);
+    }
+    // 4-octave fbm for sky/general use
+    float fbm(vec2 p){
+      float v = 0.0, a = 0.5;
+      mat2 m = mat2(1.6, 1.2, -1.2, 1.6);
+      for(int i=0;i<4;i++){ v += a*vnoise(p); p = m*p; a *= 0.5; }
+      return v;
+    }
+    // 3-octave fbm — cheaper, used for per-pixel water detail + foam
+    float fbm3(vec2 p){
+      float v = 0.0, a = 0.5;
+      mat2 m = mat2(1.6, 1.2, -1.2, 1.6);
+      for(int i=0;i<3;i++){ v += a*vnoise(p); p = m*p; a *= 0.5; }
+      return v;
+    }
+    // Overcast North-Atlantic sky. dir need not be normalized.
+    vec3 skyColor(vec3 dir, float uTime, vec3 skyTint, float warmth){
+      dir = normalize(dir);
+      float h = clamp(dir.y, -0.15, 1.0);
+      // pale bright horizon → cooler tinted zenith overhead
+      vec3 zenith  = skyTint;
+      vec3 horizon = mix(skyTint, vec3(1.0), 0.5);
+      vec3 base = mix(horizon, zenith, smoothstep(0.0, 0.55, h));
+      // soft cloud sheet, projected onto a dome plane (single fbm sample)
+      vec2 cuv = dir.xz / (abs(dir.y) + 0.22);
+      float cval = fbm(cuv * 1.0 + vec2(uTime*0.004, uTime*0.002));
+      float cl = smoothstep(0.25, 0.95, cval);
+      vec3 cloudDark  = vec3(0.44, 0.49, 0.54);
+      vec3 cloudLight = vec3(0.82, 0.84, 0.86);
+      vec3 clouds = mix(cloudDark, cloudLight, cval);
+      base = mix(base, clouds, cl * 0.6 * smoothstep(-0.02, 0.25, h));
+      // warm sun-break: tightens and intensifies as warmth rises (overcast → golden)
+      float warm = pow(max(dot(dir, normalize(vec3(0.55, 0.42, 0.30))), 0.0), mix(5.0, 2.2, warmth));
+      base += vec3(0.32, 0.18, 0.07) * warm * (0.45 + warmth * 2.2);
+      // overall golden-hour grade of the whole sky
+      base = mix(base, base * vec3(1.18, 1.0, 0.78) + vec3(0.07, 0.02, 0.0), warmth);
+      // darken just below the horizon (toward the water)
+      base = mix(base, skyTint * 0.82, smoothstep(0.0, -0.12, dir.y));
+      return base;
+    }
+    // Cheap sky (no clouds / no noise) — sampled per-water-pixel for reflection + haze.
+    // Matches the full sky at the horizon (where clouds fade out), so the water edge stays seamless.
+    vec3 skyCheap(vec3 dir, vec3 skyTint, float warmth){
+      dir = normalize(dir);
+      float h = clamp(dir.y, -0.15, 1.0);
+      vec3 zenith  = skyTint;
+      vec3 horizon = mix(skyTint, vec3(1.0), 0.5);
+      vec3 base = mix(horizon, zenith, smoothstep(0.0, 0.55, h));
+      float warm = pow(max(dot(dir, normalize(vec3(0.55, 0.42, 0.30))), 0.0), mix(5.0, 2.2, warmth));
+      base += vec3(0.32, 0.18, 0.07) * warm * (0.45 + warmth * 2.2);
+      base = mix(base, base * vec3(1.18, 1.0, 0.78) + vec3(0.07, 0.02, 0.0), warmth);
+      base = mix(base, skyTint * 0.82, smoothstep(0.0, -0.12, dir.y));
+      return base;
+    }
+    vec3 aces(vec3 x){ return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14), 0.0, 1.0); }
+    // cool, slightly desaturated cinematic grade
+    vec3 grade(vec3 c){
+      float l = dot(c, vec3(0.299, 0.587, 0.114));
+      c = mix(vec3(l), c, 0.88);                  // gentle desaturate
+      c *= vec3(0.96, 1.0, 1.03);                 // cool the mids
+      c = pow(c, vec3(0.98, 1.0, 1.02));          // lift cool shadows a touch
+      return c;
+    }
+  `;
+
+  /* ─────────────────────────────────────────────
+     SKY DOME
+  ───────────────────────────────────────────── */
+  const skyUniforms = { uTime: { value: 0 }, uSky: { value: new THREE.Color(0.40, 0.47, 0.54) }, uWarmth: { value: 0.0 } };
+  const sky = new THREE.Mesh(
+    new THREE.SphereGeometry(18000, 32, 24),
+    new THREE.ShaderMaterial({
+      side: THREE.BackSide, depthWrite: false, uniforms: skyUniforms,
+      vertexShader: `varying vec3 vDir; void main(){ vDir = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+      fragmentShader: `precision highp float; varying vec3 vDir; uniform float uTime; uniform vec3 uSky; uniform float uWarmth;
+        ${COMMON}
+        void main(){ vec3 c = skyColor(vDir, uTime, uSky, uWarmth); c = grade(aces(c)); gl_FragColor = vec4(c, 1.0); }`
+    })
+  );
+  scene.add(sky);
+
+  /* ─────────────────────────────────────────────
+     OCEAN — layered Gerstner spectrum (geometry)
+     + detail normals & foam (fragment)
+  ───────────────────────────────────────────── */
+  const NUM_WAVES = 8;
+  // Build a directional wave spectrum around a dominant wind heading.
+  // Wavenumber (k) and angular frequency (omega) are precomputed here so the
+  // vertex shader does no sqrt / divide / normalize per wave — a big GPU saving.
+  const waveA = [];   // vec4(dirX, dirZ, amplitude, k)
+  const waveQ = [];   // steepness
+  const waveW = [];   // omega (angular frequency)
+  const waveOff = []; // per-wave angular offset from the wind heading
+  const TAU = Math.PI * 2;
+  let Lmax = 230.0;
+  for (let i = 0; i < NUM_WAVES; i++) {
+    const L = Lmax * Math.pow(0.76, i);
+    const A = 0.021 * L;
+    const k = TAU / L;
+    const spread = 0.5 + i * 0.08;
+    waveOff.push(Math.sin(i * 12.9898) * 0.5 * spread);
+    waveA.push(new THREE.Vector4(1, 0, A, k));            // direction filled in by setWind()
+    waveQ.push(0.66 * Math.pow(0.9, i));
+    waveW.push(Math.sqrt(9.81 * k));                      // deep-water dispersion ω = √(g·k)
+  }
+  function setWind(windRad) {
+    for (let i = 0; i < NUM_WAVES; i++) {
+      const ang = windRad + waveOff[i];
+      waveA[i].x = Math.cos(ang);
+      waveA[i].y = Math.sin(ang);
+    }
+  }
+  setWind(0.45);
+
+  const oceanUniforms = {
+    uTime:       { value: 0 },
+    uCamPos:     { value: new THREE.Vector3() },
+    uWave:       { value: waveA },
+    uWaveQ:      { value: waveQ },
+    uWaveW:      { value: waveW },
+    uHeight:     { value: 1.0 },
+    uIntensity:  { value: 1.0 },
+    uFoam:       { value: 1.0 },
+    uWarmth:     { value: 0.0 },
+    uWaterColor: { value: new THREE.Color(0.028, 0.090, 0.098) },
+    uSky:        { value: new THREE.Color(0.40, 0.47, 0.54) },
+  };
+
+  const oceanMat = new THREE.ShaderMaterial({
+    uniforms: oceanUniforms,
+    vertexShader: `
+      precision highp float;
+      uniform float uTime;
+      uniform float uHeight;
+      uniform float uIntensity;
+      uniform vec4 uWave[${NUM_WAVES}];
+      uniform float uWaveQ[${NUM_WAVES}];
+      uniform float uWaveW[${NUM_WAVES}];
+      varying vec3 vWorld; varying vec3 vNormal; varying float vFold; varying float vHeight;
+      void main(){
+        vec3 world = (modelMatrix * vec4(position, 1.0)).xyz;
+        vec2 xz = world.xz;
+        vec3 disp = vec3(0.0);
+        vec3 nrm  = vec3(0.0);
+        float fold = 0.0, hgt = 0.0;
+        for (int i = 0; i < ${NUM_WAVES}; i++) {
+          vec2 D = uWave[i].xy;                 // already normalized on CPU
+          float A = uWave[i].z * uHeight;
+          float k = uWave[i].w;                 // precomputed wavenumber
+          float Q = clamp(uWaveQ[i] * uIntensity, 0.0, 1.0);
+          float omega = uWaveW[i];              // precomputed angular frequency
+          float f = k * dot(D, xz) - omega * uTime;
+          float cf = cos(f), sf = sin(f);
+          float WA = k * A;
+          disp.x += Q * A * D.x * cf;
+          disp.z += Q * A * D.y * cf;
+          disp.y += A * sf;
+          nrm.x  -= D.x * WA * cf;
+          nrm.z  -= D.y * WA * cf;
+          nrm.y  -= Q * WA * sf;
+          fold   += Q * WA * sf;
+          hgt    += A * sf;
+        }
+        world += disp;
+        vWorld  = world;
+        vFold   = fold;
+        vHeight = hgt;
+        vNormal = normalize(vec3(nrm.x, 1.0 + nrm.y, nrm.z));
+        gl_Position = projectionMatrix * viewMatrix * vec4(world, 1.0);
+      }`,
+    fragmentShader: `
+      precision highp float;
+      varying vec3 vWorld; varying vec3 vNormal; varying float vFold; varying float vHeight;
+      uniform float uTime; uniform vec3 uCamPos;
+      uniform vec3 uWaterColor; uniform vec3 uSky;
+      uniform float uFoam; uniform float uWarmth;
+      ${COMMON}
+
+      // analytic gradient of a scrolling noise field → fine detail normal
+      vec3 detailNormal(vec2 p, float scale, float strength, vec2 flow){
+        float e = 1.2;
+        vec2 q = p * scale + flow;
+        float n  = fbm3(q);
+        float nx = fbm3(q + vec2(e, 0.0));
+        float nz = fbm3(q + vec2(0.0, e));
+        return normalize(vec3(-(nx - n) * strength, 1.0, -(nz - n) * strength));
+      }
+
+      void main(){
+        float dist = length(uCamPos - vWorld);
+        vec3 V = normalize(uCamPos - vWorld);
+
+        // base geometric normal + a single fine-detail layer (faded with distance to kill aliasing)
+        vec3 N = normalize(vNormal);
+        float det = 1.0 - smoothstep(50.0, 700.0, dist);
+        if (det > 0.02) {
+          vec3 d1 = detailNormal(vWorld.xz, 0.10, 1.35 * det, vec2(uTime*0.6, uTime*0.4));
+          N = normalize(N + vec3(d1.x, 0.0, d1.z));
+        }
+        // specular antialiasing: flatten normals toward vertical with distance so far
+        // water stops sparkling (high-frequency normals are what FXAA can't fix)
+        float flatten = smoothstep(250.0, 2000.0, dist);
+        N = normalize(mix(N, vec3(0.0, 1.0, 0.0), flatten * 0.7));
+
+        // Fresnel sky reflection — exponent softens (rougher) with distance to widen highlights
+        float F0 = 0.020;
+        float fexp = mix(5.0, 2.4, flatten);
+        float fres = F0 + (1.0 - F0) * pow(1.0 - max(dot(N, V), 0.0), fexp);
+        vec3 refl = reflect(-V, N);
+        refl.y = max(refl.y, 0.02);
+        vec3 sky = skyCheap(refl, uSky, uWarmth);
+
+        // Water body: controllable teal with green subsurface upwelling on crest faces
+        vec3 deep    = uWaterColor * 0.42;
+        vec3 midTeal = uWaterColor;
+        float shade = clamp(vHeight * 0.06 + 0.5, 0.0, 1.0);
+        vec3 body = mix(deep, midTeal, shade);
+        // subsurface scatter: thin, back-lit crests glow green
+        float sss = smoothstep(0.2, 1.4, vHeight) * clamp(1.0 - N.y, 0.0, 1.0);
+        body += vec3(0.01, 0.10, 0.085) * sss * 0.8;
+
+        vec3 col = mix(body, sky, fres);
+
+        // overcast broad sheen (no hard sun): brightest where sky is brightest
+        float sheen = pow(max(refl.y, 0.0), 2.0) * 0.10;
+        col += vec3(0.7, 0.75, 0.78) * sheen * fres;
+
+        // FOAM — steepness pinch on crests + advected streaks in troughs (single noise sample)
+        float crest = smoothstep(0.45, 0.95, vFold) + smoothstep(0.9, 1.8, vHeight) * 0.6;
+        float n = fbm3(vWorld.xz * 0.05 + vec2(uTime*0.5, uTime*0.3));
+        float streak = smoothstep(0.4, 0.7, n) * smoothstep(0.6, -0.4, vHeight); // sits low
+        float foam = clamp(crest + streak * 0.7, 0.0, 1.0);
+        foam *= (0.55 + 0.45 * n);            // break it up with the same sample
+        foam *= det * 0.5 + 0.5;
+        foam *= uFoam;
+        vec3 foamCol = vec3(0.74, 0.79, 0.80);
+        col = mix(col, foamCol, clamp(foam, 0.0, 0.92));
+
+        // distance haze → dissolve the far water into the sky (also hides the grid edge)
+        float haze = smoothstep(700.0, 2300.0, dist);
+        vec3 hazeCol = skyCheap(-V, uSky, uWarmth);
+        col = mix(col, hazeCol, haze);
+
+        col = grade(aces(col));
+        gl_FragColor = vec4(col, 1.0);
+      }`
+  });
+
+  // Camera-locked grid: dense near the viewer, recentred every frame.
+  // 200×200 over a modest plane keeps near-field cells small while the haze hides the far edge.
+  const ocean = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000, 200, 200), oceanMat);
+  ocean.rotation.x = -Math.PI / 2;
+  scene.add(ocean);
+
+  /* ─────────────────────────────────────────────
+     GULLS — a few drifting silhouettes for scale
+  ───────────────────────────────────────────── */
+  function gullTexture() {
+    const c = document.createElement('canvas'); c.width = 64; c.height = 32;
+    const x = c.getContext('2d');
+    x.strokeStyle = 'rgba(40,46,50,0.9)'; x.lineWidth = 2.4; x.lineCap = 'round';
+    x.beginPath(); x.moveTo(6, 22); x.quadraticCurveTo(24, 8, 32, 18);
+    x.quadraticCurveTo(40, 8, 58, 22); x.stroke();
+    const t = new THREE.CanvasTexture(c); t.minFilter = THREE.LinearFilter; return t;
+  }
+  const gullMat = new THREE.SpriteMaterial({ map: gullTexture(), transparent: true, opacity: 0.5, depthWrite: false });
+  const gulls = [];
+  for (let i = 0; i < 4; i++) {
+    const g = new THREE.Sprite(gullMat.clone());
+    const s = 26 + Math.random() * 22;
+    g.scale.set(s, s * 0.5, 1);
+    g.userData = { x0: (Math.random() - 0.5) * 1600, y: 180 + Math.random() * 260, z: -700 - Math.random() * 900, sp: 0.5 + Math.random() * 0.6, ph: Math.random() * 100 };
+    scene.add(g); gulls.push(g);
+  }
+
+  /* ─────────────────────────────────────────────
+     ANTIALIASING — render to an offscreen buffer at a
+     mild supersample, then resolve to screen with FXAA.
+     SSAA tames the specular shimmer that MSAA can't touch;
+     FXAA cleans the horizon and wave-edge jaggies.
+  ───────────────────────────────────────────── */
+  // Supersample factor. 1.0 = FXAA only (cheapest). 1.3 = mild SSAA + FXAA (default).
+  // Raise toward 1.5–2.0 for crisper edges if the GPU has headroom; lower to 1.0 if not.
+  const SS = 1.3;
+  function bufSize() {
+    return [Math.max(2, Math.floor(window.innerWidth * DPR * SS)),
+            Math.max(2, Math.floor(window.innerHeight * DPR * SS))];
+  }
+  let [bw, bh] = bufSize();
+  const sceneRT = new THREE.WebGLRenderTarget(bw, bh, {
+    minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter,
+    format: THREE.RGBAFormat, depthBuffer: true, stencilBuffer: false
+  });
+
+  const fxaaScene = new THREE.Scene();
+  const fxaaCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  const fxaaMat = new THREE.ShaderMaterial({
+    uniforms: { tDiffuse: { value: sceneRT.texture }, uTexel: { value: new THREE.Vector2(1 / bw, 1 / bh) } },
+    vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position, 1.0); }`,
+    fragmentShader: `
+      precision highp float;
+      varying vec2 vUv;
+      uniform sampler2D tDiffuse;
+      uniform vec2 uTexel;
+      #define SPAN_MAX 8.0
+      #define REDUCE_MUL (1.0/8.0)
+      #define REDUCE_MIN (1.0/128.0)
+      void main(){
+        vec2 inv = uTexel;
+        vec3 luma = vec3(0.299, 0.587, 0.114);
+        vec3 rgbNW = texture2D(tDiffuse, vUv + vec2(-1.0,-1.0)*inv).rgb;
+        vec3 rgbNE = texture2D(tDiffuse, vUv + vec2( 1.0,-1.0)*inv).rgb;
+        vec3 rgbSW = texture2D(tDiffuse, vUv + vec2(-1.0, 1.0)*inv).rgb;
+        vec3 rgbSE = texture2D(tDiffuse, vUv + vec2( 1.0, 1.0)*inv).rgb;
+        vec3 rgbM  = texture2D(tDiffuse, vUv).rgb;
+        float lNW = dot(rgbNW, luma), lNE = dot(rgbNE, luma);
+        float lSW = dot(rgbSW, luma), lSE = dot(rgbSE, luma), lM = dot(rgbM, luma);
+        float lMin = min(lM, min(min(lNW,lNE), min(lSW,lSE)));
+        float lMax = max(lM, max(max(lNW,lNE), max(lSW,lSE)));
+        vec2 dir;
+        dir.x = -((lNW + lNE) - (lSW + lSE));
+        dir.y =  ((lNW + lSW) - (lNE + lSE));
+        float reduce = max((lNW + lNE + lSW + lSE) * 0.25 * REDUCE_MUL, REDUCE_MIN);
+        float rcpMin = 1.0 / (min(abs(dir.x), abs(dir.y)) + reduce);
+        dir = clamp(dir * rcpMin, -SPAN_MAX, SPAN_MAX) * inv;
+        vec3 rgbA = 0.5 * (
+          texture2D(tDiffuse, vUv + dir * (1.0/3.0 - 0.5)).rgb +
+          texture2D(tDiffuse, vUv + dir * (2.0/3.0 - 0.5)).rgb);
+        vec3 rgbB = rgbA * 0.5 + 0.25 * (
+          texture2D(tDiffuse, vUv + dir * -0.5).rgb +
+          texture2D(tDiffuse, vUv + dir *  0.5).rgb);
+        float lB = dot(rgbB, luma);
+        gl_FragColor = vec4((lB < lMin || lB > lMax) ? rgbA : rgbB, 1.0);
+      }`
+  });
+  fxaaScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), fxaaMat));
+
+  /* ─────────────────────────────────────────────
+     SCROLL → CAMERA  (single environment, no cuts)
+     Scroll lifts the gaze from churning foreground
+     up to the moody horizon. Plus idle boat motion.
+  ───────────────────────────────────────────── */
+  const scrollHint = document.getElementById('scroll-hint');
+  const loadingEl = document.getElementById('loading');
+
+  let target = 0, smooth = 0;
+  window.addEventListener('scroll', () => {
+    const max = document.body.scrollHeight - window.innerHeight;
+    target = Math.min(1, Math.max(0, window.scrollY / max));
+    scrollHint.classList.toggle('gone', window.scrollY > 60);
+  }, { passive: true });
+
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const smoothstep = t => t * t * (3 - 2 * t);
+  const tmp = new THREE.Vector3();
+  const clock = new THREE.Clock();
+  let started = false;
+  // Mouse-drive state (handlers wired in the control panel section below)
+  const mouse = { on: false, intensity: 1.0, height: 1.0 };
+  // Preset cross-fade state (presets defined + wired in the control panel section below)
+  const tween = {
+    active: false, t: 0, dur: 1.4, from: null, to: null,
+    fromW: new THREE.Color(), toW: new THREE.Color(),
+    fromS: new THREE.Color(), toS: new THREE.Color()
+  };
+  const _cwave = new THREE.Color(), _csky = new THREE.Color();
+
+  // Frame-rate cap: rendering an animated full-screen ocean every refresh is wasteful.
+  // 30 fps halves GPU load and is plenty for an ambient background.
+  const FPS_CAP = 30;
+  const FRAME_MS = 1000 / FPS_CAP;
+  let lastRender = 0;
+  let visible = true;
+  document.addEventListener('visibilitychange', () => { visible = !document.hidden; });
+
+  function frame(now) {
+    requestAnimationFrame(frame);
+    if (!visible) return;                                   // pause when tab is hidden
+    if (now - lastRender < FRAME_MS - 1) return;            // throttle to FPS_CAP
+    lastRender = now;
+
+    const dt = clock.getDelta();                           // frame delta (also advances the clock)
+    const t = clock.elapsedTime;
+    smooth += (target - smooth) * 0.12;
+    const p = smooth;
+
+    skyUniforms.uTime.value = t;
+    oceanUniforms.uTime.value = t;
+
+    // Preset cross-fade: ease every parameter from the old look to the new one
+    if (tween.active) {
+      tween.t += Math.min(dt, 0.1);
+      let k = Math.min(1, tween.t / tween.dur);
+      const ek = k < 0.5 ? 2*k*k : 1 - Math.pow(-2*k+2, 2) / 2; // easeInOutQuad
+      params.intensity = lerp(tween.from.intensity, tween.to.intensity, ek);
+      params.height    = lerp(tween.from.height,    tween.to.height,    ek);
+      params.wind      = lerp(tween.from.wind,      tween.to.wind,      ek);
+      params.foam      = lerp(tween.from.foam,      tween.to.foam,      ek);
+      params.warmth    = lerp(tween.from.warmth,    tween.to.warmth,    ek);
+      _cwave.copy(tween.fromW).lerp(tween.toW, ek);
+      _csky.copy(tween.fromS).lerp(tween.toS, ek);
+      params.waveColor = '#' + _cwave.getHexString();
+      params.skyColor  = '#' + _csky.getHexString();
+      sIntensity.value = params.intensity; sHeight.value = params.height;
+      sWind.value = params.wind; sFoam.value = params.foam; sWarmth.value = params.warmth;
+      cWave.value = params.waveColor; cSky.value = params.skyColor;
+      applyAll();
+      if (k >= 1) tween.active = false;
+    }
+
+    // Mouse-driven waves: ease params toward the mouse target, reflect in UI
+    if (mouse.on) {
+      params.intensity += (mouse.intensity - params.intensity) * 0.07;
+      params.height += (mouse.height - params.height) * 0.07;
+      oceanUniforms.uIntensity.value = params.intensity;
+      oceanUniforms.uHeight.value = params.height;
+      sIntensity.value = params.intensity; sHeight.value = params.height;
+      vIntensity.textContent = params.intensity.toFixed(2);
+      vHeight.textContent = params.height.toFixed(2);
+    }
+
+    // Boat-like idle motion
+    const bob = Math.sin(t * 0.7) * 0.5 + Math.sin(t * 1.27) * 0.22;
+    const sway = Math.sin(t * 0.33) * 0.04;
+    const roll = Math.sin(t * 0.52) * 0.013 + Math.sin(t * 0.91) * 0.006;
+
+    const camY = lerp(6.2, 10.0, smoothstep(p)) + bob + (params.height - 1.0) * 5.0; // sits low, lifts with swell
+    const fwd = -t * 7.0;                                     // gentle forward drift
+    camera.position.set(Math.sin(t * 0.2) * 6.0, camY, fwd);
+
+    // pitch: opens on the moody horizon → tips down into the churning foreground chop
+    const pitch = lerp(0.02, -0.34, smoothstep(p));
+    tmp.set(camera.position.x + sway * 200,
+            camera.position.y + Math.sin(pitch) * 400,
+            camera.position.z - Math.cos(pitch) * 400);
+    camera.lookAt(tmp);
+    camera.rotation.z += roll;
+
+    // keep the wave grid + sky centred on the camera
+    ocean.position.x = camera.position.x;
+    ocean.position.z = camera.position.z;
+    sky.position.copy(camera.position);
+    oceanUniforms.uCamPos.value.copy(camera.position);
+
+    // drift the gulls
+    for (const g of gulls) {
+      const u = g.userData;
+      g.position.set(
+        camera.position.x + u.x0 + Math.sin(t * 0.1 * u.sp + u.ph) * 300,
+        u.y + Math.sin(t * 0.5 + u.ph) * 14,
+        camera.position.z + u.z + Math.cos(t * 0.08 * u.sp + u.ph) * 200
+      );
+    }
+
+    // render scene into the supersampled buffer, then resolve to screen via FXAA
+    renderer.setRenderTarget(sceneRT);
+    renderer.render(scene, camera);
+    renderer.setRenderTarget(null);
+    renderer.render(fxaaScene, fxaaCam);
+    if (!started) { started = true; loadingEl.classList.add('gone'); }
+  }
+  requestAnimationFrame(frame);
+
+  window.addEventListener('resize', () => {
+    const w = window.innerWidth, h = window.innerHeight;
+    renderer.setSize(w, h);
+    camera.aspect = w / h; camera.updateProjectionMatrix();
+    [bw, bh] = bufSize();
+    sceneRT.setSize(bw, bh);
+    fxaaMat.uniforms.uTexel.value.set(1 / bw, 1 / bh);
+  });
+
+  /* ─────────────────────────────────────────────
+     CONTROL PANEL
+  ───────────────────────────────────────────── */
+  const $ = id => document.getElementById(id);
+  const sIntensity = $('s-intensity'), sHeight = $('s-height'), sWind = $('s-wind'), sFoam = $('s-foam'), sWarmth = $('s-warmth');
+  const cWave = $('c-wave'), cSky = $('c-sky');
+  const vIntensity = $('v-intensity'), vHeight = $('v-height'), vWind = $('v-wind'), vFoam = $('v-foam'), vWarmth = $('v-warmth');
+
+  function hexToColor(hex) { return new THREE.Color().setHex(parseInt(hex.slice(1), 16)); }
+
+  function applyAll() {
+    oceanUniforms.uIntensity.value = params.intensity;
+    oceanUniforms.uHeight.value = params.height;
+    oceanUniforms.uFoam.value = params.foam;
+    oceanUniforms.uWarmth.value = params.warmth;
+    skyUniforms.uWarmth.value = params.warmth;
+    setWind(params.wind * Math.PI / 180);
+    const wc = hexToColor(params.waveColor);
+    oceanUniforms.uWaterColor.value.copy(wc);
+    const sc = hexToColor(params.skyColor);
+    oceanUniforms.uSky.value.copy(sc);
+    skyUniforms.uSky.value.copy(sc);
+    vIntensity.textContent = params.intensity.toFixed(2);
+    vHeight.textContent = params.height.toFixed(2);
+    vWind.textContent = Math.round(params.wind) + '°';
+    vFoam.textContent = params.foam.toFixed(2);
+    vWarmth.textContent = params.warmth.toFixed(2);
+  }
+
+  sIntensity.addEventListener('input', e => { params.intensity = +e.target.value; applyAll(); });
+  sHeight.addEventListener('input', e => { params.height = +e.target.value; applyAll(); });
+  sWind.addEventListener('input', e => { params.wind = +e.target.value; applyAll(); });
+  sFoam.addEventListener('input', e => { params.foam = +e.target.value; applyAll(); });
+  sWarmth.addEventListener('input', e => { params.warmth = +e.target.value; applyAll(); });
+  cWave.addEventListener('input', e => { params.waveColor = e.target.value; applyAll(); });
+  cSky.addEventListener('input', e => { params.skyColor = e.target.value; applyAll(); });
+
+  $('ctrl-reset').addEventListener('click', () => {
+    Object.assign(params, DEFAULTS);
+    sIntensity.value = params.intensity; sHeight.value = params.height;
+    sWind.value = params.wind; sFoam.value = params.foam; sWarmth.value = params.warmth;
+    cWave.value = params.waveColor; cSky.value = params.skyColor;
+    applyAll();
+  });
+
+  const copyBtn = $('ctrl-copy');
+  copyBtn.addEventListener('click', () => {
+    const snippet = 'const DEFAULTS = { '
+      + `intensity: ${params.intensity.toFixed(2)}, `
+      + `height: ${params.height.toFixed(2)}, `
+      + `wind: ${Math.round(params.wind)}, `
+      + `foam: ${params.foam.toFixed(2)}, `
+      + `warmth: ${params.warmth.toFixed(2)}, `
+      + `waveColor: '${params.waveColor}', `
+      + `skyColor: '${params.skyColor}' };`;
+    const done = () => { copyBtn.textContent = 'Copied'; copyBtn.classList.add('copied');
+      setTimeout(() => { copyBtn.textContent = 'Copy settings'; copyBtn.classList.remove('copied'); }, 1600); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(snippet).then(done).catch(() => { window.prompt('Copy these settings:', snippet); });
+    } else {
+      window.prompt('Copy these settings:', snippet);
+    }
+  });
+
+  /* ── Weather / time-of-day presets ── */
+  const PRESETS = {
+    overcast: { intensity: 1.00, height: 1.00, wind: 26,  foam: 1.00, warmth: 0.00, waveColor: '#579cb7', skyColor: '#31bbf2' },
+    dawn:     { intensity: 0.30, height: 0.45, wind: 70,  foam: 0.35, warmth: 0.50, waveColor: '#0a1a22', skyColor: '#8a8290' },
+    golden:   { intensity: 0.85, height: 1.05, wind: 200, foam: 0.85, warmth: 0.95, waveColor: '#0d1a18', skyColor: '#b59266' },
+    storm:    { intensity: 1.85, height: 2.05, wind: 305, foam: 1.90, warmth: 0.00, waveColor: '#050d0e', skyColor: '#474f57' },
+    noon:     { intensity: 0.65, height: 0.70, wind: 130, foam: 0.65, warmth: 0.15, waveColor: '#0e3438', skyColor: '#8fb2c0' },
+    dusk:     { intensity: 0.80, height: 0.95, wind: 250, foam: 0.80, warmth: 0.40, waveColor: '#0a1420', skyColor: '#6a6a86' },
+  };
+  function applyPreset(p) {
+    // turning the mouse-drive off so it doesn't fight the transition
+    if (mouse.on) { mouse.on = false; tMouse.checked = false; controls.classList.remove('mouse-on'); }
+    tween.from = { intensity: params.intensity, height: params.height, wind: params.wind, foam: params.foam, warmth: params.warmth };
+    tween.to   = { intensity: p.intensity, height: p.height, wind: p.wind, foam: p.foam, warmth: p.warmth };
+    tween.fromW = hexToColor(params.waveColor); tween.toW = hexToColor(p.waveColor);
+    tween.fromS = hexToColor(params.skyColor);  tween.toS = hexToColor(p.skyColor);
+    tween.t = 0; tween.active = true;
+  }
+  const presetBtns = Array.from(document.querySelectorAll('.preset'));
+  presetBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const p = PRESETS[btn.dataset.preset];
+      if (!p) return;
+      applyPreset(p);
+      presetBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+  // manual tweaks deselect any active preset
+  document.getElementById('controls-body').addEventListener('input', () => {
+    presetBtns.forEach(b => b.classList.remove('active'));
+  });
+
+  const controls = $('controls'), toggle = $('controls-toggle');
+  toggle.addEventListener('click', () => {
+    const collapsed = controls.classList.toggle('collapsed');
+    toggle.setAttribute('aria-expanded', String(!collapsed));
+    toggle.querySelector('span').textContent = collapsed ? '+' : '–';
+  });
+
+  /* ── Mouse drives waves ── */
+  // When enabled, horizontal mouse → intensity, vertical mouse → height.
+  const tMouse = $('t-mouse');
+  tMouse.addEventListener('change', e => {
+    mouse.on = e.target.checked;
+    controls.classList.toggle('mouse-on', mouse.on);
+    if (mouse.on) { mouse.intensity = params.intensity; mouse.height = params.height; }
+  });
+  function onMove(clientX, clientY) {
+    if (!mouse.on) return;
+    const nx = Math.min(1, Math.max(0, clientX / window.innerWidth));
+    const ny = Math.min(1, Math.max(0, clientY / window.innerHeight));
+    mouse.intensity = nx * 2.0;          // left calm → right choppy
+    mouse.height = ny * 2.2;             // top small → bottom big swell
+  }
+  window.addEventListener('mousemove', e => onMove(e.clientX, e.clientY), { passive: true });
+  window.addEventListener('touchmove', e => {
+    if (e.touches && e.touches[0]) onMove(e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: true });
+
+  applyAll();
+})();
+</script>
+<script>
+
+(function () {
+  document.getElementById('yr').textContent = new Date().getFullYear();
+
+  var views = {
+    '/':                          'view-home',
+    '/case-studies':              'view-home',
+    '/personal':                  'view-home',
+    '/case-studies/worksafebc':   'view-worksafebc',
+    '/case-studies/nudetect':     'view-nudetect'
+  };
+  var caseBack = document.getElementById('caseBack');
+  var navLinks = document.getElementById('navLinks');
+  var navToggle = document.getElementById('navToggle');
+
+  function setActiveNav(path) {
+    document.querySelectorAll('.nav-links a').forEach(function (a) { a.classList.remove('active'); });
+    if (path.indexOf('/case-studies') === 0) {
+      var l = document.querySelector('.nav-links a[href="#/case-studies"]');
+      if (l) l.classList.add('active');
+    }
+  }
+
+  function render() {
+    var path = (location.hash || '#/').slice(1) || '/';
+    var viewId = views[path] || 'view-home';
+
+    document.querySelectorAll('.view').forEach(function (v) { v.classList.remove('is-active'); });
+    var view = document.getElementById(viewId);
+    view.classList.add('is-active');
+
+    // show the floating "back" control only inside a case study
+    caseBack.style.display = (viewId === 'view-home') ? 'none' : 'inline-flex';
+
+    setActiveNav(path);
+
+    // app-like behaviour: jump to the top of each view, no reload
+    window.scrollTo(0, 0);
+
+    // "Case studies" deep-links to the cards on the home view
+    if (path === '/case-studies') {
+      var anchor = document.getElementById('case-studies');
+      if (anchor) anchor.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // close the mobile menu after navigating
+    navLinks.classList.remove('open');
+  }
+
+  // hash routing = no page reloads; back/forward buttons just work
+  window.addEventListener('hashchange', render);
+  window.addEventListener('DOMContentLoaded', render);
+  render();
+
+  // mobile menu
+  navToggle.addEventListener('click', function () { navLinks.classList.toggle('open'); });
+})();
+
+</script>
+<script>
+
+function scaleCases(){
+  var vw=document.documentElement.clientWidth;
+  var s=Math.min(1,(vw-24)/1731);
+  document.querySelectorAll('.case-scale').forEach(function(sc){
+    var cv=sc.querySelector('.case-canvas'); if(!cv) return;
+    cv.style.transform='scale('+s+')';
+    sc.style.width=(1731*s)+'px'; sc.style.height=(9666*s)+'px';
+  });
+}
+window.addEventListener('resize',scaleCases);
+window.addEventListener('hashchange',function(){setTimeout(scaleCases,0);});
+window.addEventListener('DOMContentLoaded',scaleCases);
+window.addEventListener('load',scaleCases);
+
+</script>
+</body>
+</html>

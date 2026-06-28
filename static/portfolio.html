@@ -3,18 +3,52 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="UX/UI Design portfolio by Sandy Isaacs at Systemblue New Media">
 <title>Systemblue New Media — UX/UI Design by Sandy Isaacs</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
 <style>
-
-  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+/* ═══════════════════════════════════════════════════════════════════════════
+   GLOBAL STYLES & CSS CUSTOM PROPERTIES
+   ═══════════════════════════════════════════════════════════════════════════ */
+  *, *::before, *::after { 
+    margin: 0; 
+    padding: 0; 
+    box-sizing: border-box; 
+  }
 
   :root {
-    --sea-foam: #b9c6c8;
+    /* Colors */
+    --color-dark-bg: #0a0f11;
+    --color-sea-foam: #b9c6c8;
+    --color-text-primary: #ffffff;
+    --color-text-secondary: rgba(255, 255, 255, 0.6);
+    --color-text-tertiary: rgba(255, 255, 255, 0.45);
+    --color-border: rgba(255, 255, 255, 0.14);
+    --color-panel: #e8f5fb;
+    --color-panel-dark: rgba(8, 16, 20, 0.42);
+    --color-yellow: #f3d11e;
+    --color-blue-light: #6dcff6;
+    
+    /* Typography */
     --type-mono: 'SF Mono', 'Fira Mono', ui-monospace, 'Consolas', monospace;
+    --type-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    --type-franklin: 'Franklin Gothic Book', 'Libre Franklin', 'Helvetica Neue', Arial, sans-serif;
+    --type-franklin-demi: 'Franklin Gothic Demi', 'Franklin Gothic Medium', 'Helvetica Neue', Arial, sans-serif;
+    
+    /* Spacing */
+    --spacing-xs: 8px;
+    --spacing-sm: 16px;
+    --spacing-md: 24px;
+    --spacing-lg: 40px;
+    --spacing-xl: 80px;
+    
+    /* Layout */
+    --max-width: 1100px;
+    --nav-height: 70px;
   }
 
   body {
@@ -232,6 +266,7 @@
   .contact-btn:hover { background: #e8f7fd; transform: translateY(-1px); }
   .nav-toggle { display: none; background: none; border: none; color: #ccc; font-size: 1.25rem; cursor: pointer; }
 .image-size-m{width:100%;height:360px;object-fit:scale-down;}
+.image-size-l{width:100%;height:480px;object-fit:scale-down;}
   /* ───────── Views ───────── */
   main { padding-top: 70px; }
   .view { display: none; }
@@ -257,7 +292,7 @@
   .cs-media img { width: 100%; height: 370px; object-fit: contain; }
   .cs-card.is-link .cs-media { cursor: pointer; transition: transform 0.35s ease; }
   .cs-card.is-link:hover .cs-media { transform: translateY(-4px) scale(1.01); }
-
+  .cs-container{display:flex;flex-direction:column;gap:20px; margin-bottom: 60px;}
   .cs-panel { background: var(--panel); color: var(--ink); border-radius: 12px; padding: 30px 34px; }
   .cs-eyebrow { font-family: var(--font-demi); font-weight: 700; font-size: 1.02rem; color: #111; margin-bottom: 14px; }
   .cs-title { font-family: var(--font-demi); font-weight: 700; font-size: 1.06rem; color: #111; margin-bottom: 14px; }
@@ -525,7 +560,7 @@ main{position:relative;z-index:3;}
       <img src="images/systemblue-mock1_03.png" class="image-size-m" alt="WorkSafeBC Prohibited Action Complaint app on three phones">
     </div>
   </div>
-  <div class="mb-5 mt-5">
+  <div class="cs-container">
     <div class="cs-panel">
     <h5><b>The project</b></h5>
     <div class="row">
@@ -549,7 +584,7 @@ It is illegal for an employer or union to penalize you for raising a health or s
     </div>
   </div>
 </div>
-<div class="mb-5 mt-5">
+<div class="cs-container">
   <div class="cs-panel">
     <h2>Design brief</h2>
     <div class="row">
@@ -560,17 +595,18 @@ It is illegal for an employer or union to penalize you for raising a health or s
       <div class="col-md-6">
         <h5><b>Solution</b></h5>
         <p>Design a responsive online complaint form that workers find easy to complete and understand as well as a prescreening questionnaire that sets expectations about the complaint process. We will also design an online portal that both workers and employers can use as a hub for communication with WorkSafeBC about the ongoing status of their complaint as well as upload documents and evidence. </p>
+      
       </div>
     </div>
   </div>
 </div>
-<div class="mb-5 mt-5">
+<div class="cs-container">
   <div class="">
     
 <img src="images/ux-process.png" alt="A diagram showing the UX design process for the project, including user research, wireframing, prototyping, and usability testing.">
   </div>
   </div>
-  <div class="mb-5 mt-t">
+  <div class="cs-container">
     <div class="cs-panel">
     <h2>Empathize</h2>
     <div class="panel-yellow px-2 pt-1 pb-0">
@@ -591,7 +627,7 @@ It is illegal for an employer or union to penalize you for raising a health or s
     </div>
 </div>
   </div>
-  <div class="mb-5 mt-5">
+  <div class="cs-container">
     <div class="cs-panel">
       <h5><b>Personas</b></h5>
       <div class="row">
@@ -604,7 +640,7 @@ It is illegal for an employer or union to penalize you for raising a health or s
       </div>
       <img src="images/personas.png" alt="a collection of user personas representing the different types of users involved in the complaint process, including workers, employers, and case workers. Each persona includes a name, photo, and description of their background, goals, and pain points.">
     </div>
-    <div class="mb-5 mt-5">
+    <div class="cs-container">
       <div class="cs-panel panel-yellow">
         <h5><b>Key findings</b></h5>
         <div class="row">
@@ -620,7 +656,7 @@ It is illegal for an employer or union to penalize you for raising a health or s
         </div>
       </div>
     </div>
-    <div class="mb-5 mt-5">
+    <div class="cs-container">
       <div class="cs-panel">
         <h2>Define</h2>
     <h5><b>User journeys, Site map</b></h5>
@@ -636,7 +672,7 @@ It is illegal for an employer or union to penalize you for raising a health or s
     </div>
   </div>
   </div>
-  <div class="mb-5 mt-5">
+  <div class="cs-container">
     <div class="cs-panel">
     <h2>Ideation</h2>
      <div class="panel-yellow px-2 pt-1 pb-0">
@@ -660,11 +696,157 @@ It is illegal for an employer or union to penalize you for raising a health or s
 <div class="col-md-6">
   <img src="images/wireframe4.png" alt="a mobile wireframe showing the layout and structure of the online complaint submission form for workers at WorkSafeBC. The wireframe includes a series of input fields, buttons, and other elements, as well as annotations explaining the design decisions.">
 </div>
+</div>
+  </div>
+  </div>
+  <div class="cs-container">
+    <div class="cs-panel">
+    <h5><b>Mockups</b></h5>
+    <div class="row">
+      <div class="col-md-6">
+        <p>Mockups start to tackle the objective of combining content, branding and usability. We can identify usability issues by using different UI patterns and components while keeping in mind and referring to our User Personas.</p>
+      </div>
+      <div class="col-md-6">
+        <p> Content copy is also fine tuned by the business and UX designer to ensure it is accurate and understandable to the user.</p>
 
+      </div>
+    </div>
+  <div class="mt-3">
+    <img src="images/mockups1.png" alt="a high-fidelity mockup showing the visual design and layout of the online complaint submission form for workers at WorkSafeBC. The mockup includes a series of input fields, buttons, and other elements, as well as annotations explaining the design decisions.">  
+
+  </div>
+  <div class="mt-3">
+    <img src="images/mockups2.png" alt="a high-fidelity mockup showing the visual design and layout of the online complaint portal for workers and staff at WorkSafeBC. The mockup includes a series of pages and features, as well as annotations explaining the design decisions.">
+  </div>
+  </div>
+  </div>
+  <div class="cs-container">
+    <div class="cs-panel">
+    <h5><b>Prototypes</b></h5>
+    <p>Interactive prototypes were created to test the usability and functionality of the online complaint submission form and portal. These prototypes were used to gather feedback from users and stakeholders, and to identify any issues or areas for improvement before development.</p>
+    <img src="images/prototype-blue.png" alt="a prototype showing the interactive design and functionality of the online complaint submission form and portal for workers and staff at WorkSafeBC. The prototype includes a series of pages and features, as well as annotations explaining the design decisions.">
+  </div>  
   </div>
 </section>
 <section id="view-nudetect" class="view case-view">
-  <div class="case-scale"><div class="case-canvas" style="width:1731px;height:9666px"><img class="case-img" src="case-nudetect-img.png" alt=""><span class="t" style="left:249.8px;top:238.1px;font-size:41.7px;color:#d7dee1;font-weight:400;font-family:var(--book)">NuDetect Dashboard UI/UX</span><span class="t" style="left:247.2px;top:293.5px;font-size:27.8px;color:#f4f6f7;font-weight:600;font-family:var(--demi)">The Client</span><span class="t" style="left:249.9px;top:350.1px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">NuDetect by NuData Security, a Mastercard® company uses behavioral</span><span class="t" style="left:249.9px;top:371.7px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">analytics and passive biometrics to identify good (digital) users in real-time</span><span class="t" style="left:249.9px;top:393.2px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">with confidence, without adding friction—assessing hundreds of device,</span><span class="t" style="left:249.9px;top:414.8px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">location, passive biometric and behavioral signals against past user behavior</span><span class="t" style="left:249.9px;top:436.4px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">and known behaviors.</span><span class="t" style="left:249.9px;top:458.0px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">The dashboard provides robust investigative tools and data visualizations for</span><span class="t" style="left:249.9px;top:479.5px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">analyst.</span><span class="t" style="left:248.8px;top:768.0px;font-size:27.8px;color:#f4f6f7;font-weight:600;font-family:var(--demi)">The project</span><span class="t" style="left:249.8px;top:824.6px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">NuDetect is NuData Security’s flagship behavioral biometrics platform, The project focused on improving data visualization, investigation</span><span class="t" style="left:249.8px;top:846.2px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">designed to help organizations identify legitimate users and detect workflows, and usability across high-volume monitoring environments.</span><span class="t" style="left:249.8px;top:867.7px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">fraudulent activity based on how people interact online. As part of the UX Through user research, workflow analysis, wireframing, prototyping, and</span><span class="t" style="left:249.8px;top:889.3px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">design team, I contributed to the redesign and enhancement of the usability testing, we created a more intuitive experience that enabled</span><span class="t" style="left:249.8px;top:910.9px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">NuDetect dashboard, transforming complex risk analysis data into analysts to identify threats faster, reduce investigation time, and make</span><span class="t" style="left:249.8px;top:932.5px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">actionable insights for fraud analysts and security teams.</span><span class="t" style="left:867.8px;top:932.5px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">more confident risk-based decisions.</span><span class="t" style="left:249.4px;top:1951.5px;font-size:41.7px;color:#d7dee1;font-weight:400;font-family:var(--book)">Design process</span><span class="t" style="left:248.3px;top:2801.2px;font-size:41.7px;color:#d7dee1;font-weight:400;font-family:var(--book)">Research</span><span class="t" style="left:252.9px;top:2862.4px;font-size:27.8px;color:#f4f6f7;font-weight:600;font-family:var(--demi)">Competitive analysis</span><span class="t" style="left:865.8px;top:2915.0px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">By documenting strengths, weaknesses, and recurring design patterns, I TToo iinnffoorrmm tthhee ddeessiiggnn ooff aa ddaattaa vviissuuaalliizzaattiioonn ddaasshhbbooaarrdd,, II ccoonndduucctteedd aa</span><span class="t" style="left:252.9px;top:2938.9px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">competitive UX analysis of leading analytics, fraud detection, identified opportunities to improve usability, reduce cognitive load, and</span><span class="t" style="left:865.8px;top:2958.1px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">support faster decision-making. The analysis revealed best practices for cybersecurity, and business intelligence platforms. I evaluated each</span><span class="t" style="left:865.8px;top:2979.7px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">presenting complex datasets, highlighting anomalies, and enabling users product&#x27;s information architecture, navigation patterns, data visualization</span><span class="t" style="left:252.9px;top:3003.6px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">techniques, filtering mechanisms, alert systems, and investigation to move efficiently from high-level insights to detailed investigations. These</span><span class="t" style="left:865.8px;top:3022.8px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">findings directly influenced dashboard layout, interaction design, workflows.</span><span class="t" style="left:865.8px;top:3044.4px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">prioritization of key metrics, and the overall user experience strategy.</span><span class="t" style="left:252.9px;top:3821.4px;font-size:27.8px;color:#f4f6f7;font-weight:600;font-family:var(--demi)">User research and personas</span><span class="t" style="left:252.9px;top:3876.4px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">TToo bbeetttteerr uunnddeerrssttaanndd tthhee nneeeeddss ooff ffrraauudd aannaallyyssttss,, sseeccuurriittyy iinnvveessttiiggaattoorrss,, I analyzed recurring patterns across participants and translated these</span><span class="t" style="left:252.9px;top:3897.9px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">and risk management teams, I planned and conducted stakeholder and findings into detailed user personas that represented key user groups,</span><span class="t" style="left:252.9px;top:3919.5px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">user interviews focused on how organizations use NuData’s behavioral their motivations, challenges, technical expertise, and operational needs.</span><span class="t" style="left:252.9px;top:3941.1px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">biometrics platform to identify legitimate users and detect fraudulent These personas became foundational design tools that guided product</span><span class="t" style="left:252.9px;top:3962.7px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">activity. Through structured interviews, workflow mapping, and synthesis strategy, dashboard design, feature prioritization, and usability</span><span class="t" style="left:252.9px;top:3984.2px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">sessions, I gathered insights into users&#x27; goals, decision-making processes, improvements throughout the development of the NuDetect platform.</span><span class="t" style="left:252.9px;top:4005.8px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">pain points, and reporting requirements.</span><span class="t" style="left:248.3px;top:5833.3px;font-size:41.7px;color:#d7dee1;font-weight:400;font-family:var(--book)">Wireframes</span><span class="t" style="left:249.0px;top:5929.7px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">Building on insights gathered from user interviews and personas, I led the The wireframes focused on helping fraud analysts quickly identify</span><span class="t" style="left:249.0px;top:5951.3px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">ideation and wireframing process for NuData&#x27;s behavioral biometrics</span><span class="t" style="left:867.8px;top:5951.3px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">suspicious activity, investigate behavioral signals, and take action with</span><span class="t" style="left:249.0px;top:5972.8px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">platform. I facilitated collaborative design workshops and explored</span><span class="t" style="left:867.8px;top:5972.8px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">minimal cognitive load. By iterating on concepts with stakeholders and</span><span class="t" style="left:249.0px;top:5994.4px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">multiple concepts for dashboard layouts, investigation workflows, risk</span><span class="t" style="left:867.8px;top:5994.4px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">incorporating user feedback throughout the design process, I established</span><span class="t" style="left:249.0px;top:6016.0px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">scoring visualizations, and alert management experiences. Through rapid a scalable foundation that informed high-fidelity prototypes and the final</span><span class="t" style="left:249.0px;top:6037.6px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">sketching and low-fidelity wireframes, I translated complex user</span><span class="t" style="left:867.8px;top:6037.6px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">NuDetect user experience.</span><span class="t" style="left:249.0px;top:6059.1px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">requirements into clear information architecture and intuitive user flows.</span><span class="t" style="left:248.3px;top:6891.3px;font-size:41.7px;color:#d7dee1;font-weight:400;font-family:var(--book)">Prototypes</span><span class="t" style="left:248.8px;top:6969.9px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">As the UI designer for NuData&#x27;s behavioral biometrics platform, I Using interactive prototypes, I validated design concepts, demonstrated</span><span class="t" style="left:248.8px;top:6991.4px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">transformed wireframes and user requirements into polished, high-fidelity end-to-end user journeys, and gathered feedback before development,</span><span class="t" style="left:248.8px;top:7013.0px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">mockups and interactive prototypes. I designed a modern, data-driven helping reduce implementation risk and ensuring the final NuDetect</span><span class="t" style="left:248.8px;top:7034.6px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">interface that balanced complex security analytics with clarity and usability, experience was both visually engaging and highly effective for security</span><span class="t" style="left:248.8px;top:7056.2px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">ensuring fraud analysts could quickly interpret behavioral risk signals and operations teams.</span><span class="t" style="left:248.8px;top:7077.7px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">investigate suspicious activity. Working closely with product managers,</span><span class="t" style="left:248.8px;top:7099.3px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">developers, and stakeholders, I established visual design standards,</span><span class="t" style="left:248.8px;top:7120.9px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">created reusable UI components, and refined dashboard layouts, charts,</span><span class="t" style="left:248.8px;top:7142.5px;font-size:20.9px;color:#d7dee1;font-weight:400;font-family:var(--book)">tables, and investigation workflows.</span></div></div>
+  <div class="container">
+    <div class="row mb-5">
+      <div class="col-md-6 mt-5">
+        <div class="cs-panel">
+          <h3>NuDetect</h3>
+          <h5 class="mb-3"><b>The client</b></h5>
+          <p>NuData Security is a critical element of the Mastercard Cyber and Intelligence business which is helping to create a secure and inclusive digital future with a range of identity, cyber and AI technologies.</p>
+        </div>
+      </div>
+      <div class="col-md-6 mt-5 d-flex justify-content-center align-items-center">
+        <img src="images/nudetect1.png" class="image-size-m" alt="NuData Security dashboard">
+      </div>
+    </div>
+    <div class="cs-container">
+      <div class="cs-panel">
+        <h5><b>The project</b></h5>
+        <div class="row">
+          <div class="col-md-6">
+            <p>NuDetect is NuData Security’s flagship behavioral biometrics platform, designed to help organizations identify legitimate users and detect fraudulent activity based on how people interact online. As part of the UX design team, I contributed to the redesign and enhancement of the NuDetect dashboard, transforming complex risk analysis data into actionable insights for fraud analysts and security teams.
+</p>
+
+          </div>
+          <div class="col-md-6">
+            <p>The project focused on improving data visualization, investigation workflows, and usability across high-volume monitoring environments. Through user research, workflow analysis, wireframing, prototyping, and usability testing, we created a more intuitive experience that enabled analysts to identify threats faster, reduce investigation time, and make more confident risk-based decisions.<br><br></p>
+                 <p><b>Role: </b>UI Designer <br>
+        <b>Tools: </b>Photoshop, Illustrator</p>
+          </div>
+        </div>
+   <div class="row">
+    <div class="col-md-6"><img src="images/Session-Analysis-v3b.png" alt="NuDetect dashboard screenshot"></div>
+    <div class="col-md-6"><img src="images/Session Analysis v3-flowtiming.png" alt="NuDetect dashboard screenshot"></div>
+   </div>
+      </div>
+    </div>
+    <div class="mb-5 mb-6">
+      <img src="images/ux-design-process.png" alt="a chart explaining the UX design process for the NuDetect project, including user research, wireframing, prototyping, and usability testing.">
+    </div>
+    <div class="mb-5 mt-6">
+      <div class="cs-panel">
+    
+      <h2>Research</h2>
+      <h5><b>Competitive UX analysis</b></h5>
+      <div class="row">
+        <div class="col-md-6">
+          <p>To inform the design of a data visualization dashboard, I conducted a competitive UX analysis of leading analytics, fraud detection, cybersecurity, and business intelligence platforms. I evaluated each product's information architecture, navigation patterns, data visualization techniques, filtering mechanisms, alert systems, and investigation workflows. </p>
+        </div>
+        <div class="col-md-6">
+          <p>By documenting strengths, weaknesses, and recurring design patterns, I identified opportunities to improve usability, reduce cognitive load, and support faster decision-making. The analysis revealed best practices for presenting complex datasets, highlighting anomalies, and enabling users to move efficiently from high-level insights to detailed investigations. These findings directly influenced dashboard layout, interaction design, prioritization of key metrics, and the overall user experience strategy.</p>
+        </div>
+      </div>
+      <img src="images/research.png" alt="a collection of screenshots from various analytics and fraud detection platforms, showing how they present data visualizations, alerts, and investigation workflows." class="img-fluid">
+    </div>
+    </div>
+    <div class="cs-container">
+      <div class="cs-panel">
+      <h5><b>User research and persona development</b></h5>
+      <div class="row">
+        <div class="col-md-6">
+          <p>To better understand the needs of fraud analysts, security investigators, and risk management teams, I planned and conducted stakeholder and user interviews focused on how organizations use NuData’s behavioral biometrics platform to identify legitimate users and detect fraudulent activity. Through structured interviews, workflow mapping, and synthesis sessions, I gathered insights into users' goals, decision-making processes, pain points, and reporting requirements.</p>
+        </div>
+        <div class="col-md-6">
+          <p>I analyzed recurring patterns across participants and translated these findings into detailed user personas that represented key user groups, their motivations, challenges, technical expertise, and operational needs. These personas became foundational design tools that guided product strategy, dashboard design, feature prioritization, and usability improvements throughout the development of the NuDetect platform.</p>
+        </div>
+      </div>
+      <div class="mb-3">
+      <img src="images/Mason.png" alt="a user persona representing a fraud analyst, including a photo, name, job title, background, goals, pain points, and technical expertise." class="img-fluid">
+
+      </div>
+      <div class="mb-3">
+        <img src="images/Red-Route-Results-Row.png" alt="a red route analysis diagram showing the most common workflows and decision paths taken by fraud analysts when investigating suspicious activity, highlighting key touchpoints, pain points, and opportunities for improvement." class="img-fluid">
+      </div>
+    </div>
+    </div>
+    <div class="cs-container">
+      <div class="cs-panel">
+        <h5><b>Wireframing</b></h5>
+        <div class="row">
+          <div class="col-md-6">
+            <p>Building on insights gathered from user interviews and personas, I led the ideation and wireframing process for NuData's behavioral biometrics platform. I facilitated collaborative design workshops and explored multiple concepts for dashboard layouts, investigation workflows, risk scoring visualizations, and alert management experiences. Through rapid sketching and low-fidelity wireframes, I translated complex user requirements into clear information architecture and intuitive user flows.</p>
+          <img src="images/wireframe2-nud.png" class="image-size-l" alt="a wireframe showing the layout and structure of the NuDetect dashboard, including data visualizations, investigation workflows, and alert management features. The wireframe includes annotations explaining the design decisions.">
+          </div>
+          <div class="col-md-6">
+            <p>The wireframes focused on helping fraud analysts quickly identify suspicious activity, investigate behavioral signals, and take action with minimal cognitive load. By iterating on concepts with stakeholders and incorporating user feedback throughout the design process, I established a scalable foundation that informed high-fidelity prototypes and the final NuDetect user experience.</p>
+         <img src="images/wireframe1-nud.png" class="image-size-l" alt="a wireframe showing the layout and structure of the NuDetect dashboard, including data visualizations, investigation workflows, and alert management features. The wireframe includes annotations explaining the design decisions. ">
+          </div>
+      </div>
+    </div>
+  </div>
+  <div class="cs-container">
+    <div class="cs-panel">
+      <h5><b>Prototyping and usability testing</b></h5>
+      <div class="row">
+        <div class="col-md-6">
+          <p>After finalizing the wireframes, I created interactive prototypes to simulate the NuDetect dashboard experience. These prototypes allowed stakeholders and users to explore the proposed workflows, data visualizations, and alert management features in a realistic context. I conducted usability testing sessions with fraud analysts and security investigators, observing their interactions, gathering feedback, and identifying areas for improvement.</p>
+        </div>
+        <div class="col-md-6">
+          <p>Based on usability testing results, I iterated on the prototypes to enhance clarity, reduce friction, and optimize task flows. This iterative process ensured that the final design met user needs, improved efficiency, and supported effective decision-making in high-pressure environments.</p>
+        </div>
+      </div>
+<div class="row mt-5">
+  <div class="col-md-6">
+    <img src="images/biometric-updated_mc1_03.png" class="image-size-l" alt="A biometric sensor dashboard screenshot showing data visualizations, investigation workflows, and alert management features. The screenshot includes annotations explaining the design decisions.">  
+  </div>
+  <div class="col-md-6">
+    <img src="images/policies-panel_mc1-b.png" alt="A screenshot of the policies panel in the NuDetect dashboard, showing the layout and structure of the policy management interface. The screenshot includes annotations explaining the design decisions.">
+  </div>
+</div>
+<div class="row mt-5">
+  <div class="col-md-6">
+    <img src="images/Session-Analysis-v3b.png" alt="a screenshot of the session analysis view in the NuDetect dashboard, showing data visualizations, investigation workflows, and alert management features. The screenshot includes annotations explaining the design decisions.">
+  </div>
+  <div class="col-md-6">
+    <img src="images/aggregate-analysis.png" alt="a screenshot of the aggregate analysis view in the NuDetect dashboard, showing data visualizations, investigation workflows, and alert management features. The screenshot includes annotations explaining the design decisions.">
+  </div>
+</div>
+    </div>
+
+  </div>
 </section>
 </main>
 <a class="case-back" id="caseBack" href="#/case-studies" data-link style="display:none">

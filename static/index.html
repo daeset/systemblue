@@ -241,6 +241,31 @@
   body { background: var(--bg); color: #fff; font-family: var(--font); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
   a { text-decoration: none; color: inherit; }
   img { display: block; max-width: 100%; }
+  .skip-link {
+    position: absolute;
+    left: 16px;
+    top: -48px;
+    z-index: 1000;
+    padding: 10px 16px;
+    background: #ffffff;
+    color: #0f1b20;
+    border-radius: 6px;
+    font-weight: 600;
+    transition: top 0.2s ease;
+  }
+  .skip-link:focus { top: 16px; }
+  a:focus-visible, button:focus-visible, input:focus-visible {
+    outline: 3px solid #f3d11e;
+    outline-offset: 3px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 .btn { display: inline-flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 500; color: #fff; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 7px; padding: 10px 18px; transition: background 0.2s, color 0.2s; cursor: pointer; }
 .btn:hover { background: rgba(255,255,255,0.65); color: #e8e8e8; }
 #view-case-studies{position: relative; z-index: 5; margin-top: 42px; font-family: var(--font-demi); font-size: 0.9rem;  color: #fff; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 7px; padding: 10px 18px; transition: background 0.2s, color 0.2s; } 
@@ -256,14 +281,14 @@
   .brand { font-family: var(--font-demi); font-size: 1.5rem; letter-spacing: -0.01em; color: #d8d8d8; }
   .brand b { color: var(--yellow); font-weight: 700; }
   .nav-links { display: flex; align-items: center; gap: 38px; }
-  .nav-links a { font-size: 0.86rem; color: var(--white); transition: color 0.2s; }
+  .nav-links a { font-size: 0.86rem; color: #f4fbff; transition: color 0.2s; }
   .nav-links a:hover, .nav-links a.active { color: var(--yellow); }
   .contact-btn {
-    border: 1px solid rgba(255,255,255,0.25); background: #9ee1fc; color: #3c7186 !important; opacity: 0.5;
+    border: 1px solid rgba(255,255,255,0.25); background: #f4fbff; color: #0f1b20 !important; opacity: 1;
     padding: 11px 20px; border-radius: 7px; font-weight: 600; font-size: 0.84rem !important;
     transition: background 0.2s, transform 0.2s;
   }
-  .contact-btn:hover { background: #e8f7fd; transform: translateY(-1px); }
+  .contact-btn:hover { background: #ffffff; transform: translateY(-1px); }
   .nav-toggle { display: none; background: none; border: none; color: #ccc; font-size: 1.25rem; cursor: pointer; }
 .image-size-m{width:100%;height:360px;object-fit:scale-down;}
 .image-size-l{width:100%;height:480px;object-fit:scale-down;}
@@ -325,7 +350,7 @@
   .case-back:hover { background: rgba(40,40,40,0.95); transform: translateY(-2px); }
 
   /* ───────── Footer ───────── */
-  .site-foot { border-top: 1px solid rgba(255,255,255,0.06); padding: 40px 0; text-align: center; color: var(--dark-blue); font-size: 0.82rem; }
+  .site-foot { border-top: 1px solid rgba(255,255,255,0.06); padding: 40px 0; text-align: center; color: var(--white); font-size: 0.82rem; }
 
   /* ───────── Responsive ───────── */
   @media (max-width: 860px) {
@@ -366,9 +391,9 @@ main{position:relative;z-index:3;}
 .cs-panel{background:rgba(181,234,255,0.6);backdrop-filter:blur(7px) saturate(1.1);
   -webkit-backdrop-filter:blur(7px) saturate(1.1);box-shadow:0 14px 44px rgba(0,0,0,.42);}
 .cs-heading{color:#dcebef!important;text-shadow:0 2px 16px rgba(0,0,0,.55);text-align:center; padding-top:90px;}
-.hero-title{color:#6dcff6!important;text-shadow:0 2px 24px rgba(0,0,0,.6);}
-.hero-tag{color:#d3e3e9!important;text-shadow:0 2px 16px rgba(0,0,0,.55);}
-.hero-by{text-shadow:0 1px 12px rgba(0,0,0,.7);}
+.hero-title{color:#f4fbff!important;text-shadow:0 2px 24px rgba(0,0,0,.6);} 
+.hero-tag{color:#eef7fa!important;text-shadow:0 2px 16px rgba(0,0,0,.55);} 
+.hero-by{color:#ffe76b!important;text-shadow:0 1px 12px rgba(0,0,0,.7);}
 .brand,.brand *{text-shadow:0 1px 10px rgba(0,0,0,.5);}
 
 /* case study positioned canvas */
@@ -384,6 +409,7 @@ main{position:relative;z-index:3;}
 </style>
 </head>
 <body>
+<a class="skip-link" href="#main-content">Skip to main content</a>
 <div id="stage"><canvas id="gl"></canvas></div>
 <div id="grade"></div>
 
@@ -447,23 +473,22 @@ main{position:relative;z-index:3;}
 </div>
 
 
-<header class="nav">
+<header class="nav" role="banner">
   <div class="nav-inner">
     <a class="brand" href="#/" data-link><b>Systemblue</b><span style="font-family: var(--font);"> New&nbsp;Media</span></a>
-    <div class="nav-right">
-      
-      <button class="nav-toggle" id="navToggle" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
-    </div>
-    <nav class="nav-links" id="navLinks">
+    <!--<div class="nav-right">
+      <button class="nav-toggle" id="navToggle" type="button" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="navLinks"><i class="fa-solid fa-bars" aria-hidden="true"></i></button>
+    </div>-->
+    <nav class="nav-links" id="navLinks" aria-label="Primary navigation">
       <a href="#/case-studies" data-link>Case studies</a>
       <!--<a href="#/" data-link>Personal projects</a>-->
       <a class="contact-btn" href="mailto:hello@systemblue.example">Contact</a>
-      <button id="controls-toggle" aria-expanded="true" aria-label="Sea controls"><i class="fa-solid fa-gear"></i></button>
+      <button id="controls-toggle" type="button" aria-expanded="false" aria-controls="controls" aria-label="Sea controls"><i class="fa-solid fa-gear" aria-hidden="true"></i></button>
     </nav>
   </div>
 </header>
-<main>
-<section id="view-home" class="view">
+<main id="main-content" tabindex="-1">
+<section id="view-home" class="view" aria-labelledby="case-studies">
   <div class="container">
     <div class="wrap">
       <div class="hero">
@@ -476,7 +501,7 @@ main{position:relative;z-index:3;}
             <p class="hero-tag">Intuitive interfaces<br>that drive measurable results</p>
           </div>
         </div>
-        <button id="view-case-studies" class="btn btn-primary" onclick="document.getElementById('case-studies').scrollIntoView({ behavior: 'smooth' })"><i class="fa-solid fa-arrow-down"></i>View case studies</button>
+        <a id="view-case-studies" class="btn btn-primary" href="#case-studies"><i class="fa-solid fa-arrow-down" aria-hidden="true"></i>View case studies</a>
 
       </div>
 
@@ -516,22 +541,23 @@ main{position:relative;z-index:3;}
       </a>
 
       <!-- Card 3 — Bodog -->
-      <div class="cs-card mb-5">
+      <a class="cs-card is-link mb-5" href="#/case-studies/bodog" data-link>
         <div class="cs-media"><img src="images/dev-tv.png" alt="Bodog logo on a television"></div>
         <div class="cs-panel">
           <div class="cs-eyebrow">Bodog</div>
           <div class="cs-title">Visual ID</div>
           <p class="cs-body">The Bodog Sportsbook offers the latest NFL Odds, NBA betting options, a huge variety of NHL odds, the best MLB odds and Super Bowl in Canada.</p>
+           <span class="cs-link">View case study <i class="fa-solid fa-arrow-right"></i></span>
           <div class="cs-role">Graphic Designer</div>
           <div class="cs-tech">
             <span class="adobe ps">Ps</span>
             <span class="adobe ai">Ai</span>
           </div>
         </div>
-      </div>
+      </a>
     </div>
 
-    <footer class="site-foot">© <span id="yr"></span> Systemblue New Media · UX | UI Design by Sandy Isaacs</footer>
+    <footer class="site-foot" role="contentinfo">© <span id="yr"></span> Systemblue New Media · UX | UI Design by Sandy Isaacs</footer>
     </div>
   </section>
 <section id="view-worksafebc" class="view case-view">
@@ -849,9 +875,25 @@ It is illegal for an employer or union to penalize you for raising a health or s
 
   </div>
 </section>
+<section id="view-bodog" class="view case-view">
+  <div class="container">
+    <div class="row mb-5">
+      <div class="col-md-12 mt-5">
+        <div class="cs-panel">
+          <h3>Bodog</h3>
+          <img src="images/bodog-comp.png" alt="Bodog logo on the grass of a sports field" class=" mb-3">
+          <h5 class="mb-3"><b>Visual Identity Development</b></h5>
+          <p>As Lead Designer at Bodog.com, I was responsible for developing a visual identity that reflected the company's bold personality and global ambitions. The centerpiece of this effort was the creation of the Bodog logo—a clean, confident mark designed to be instantly recognizable across digital platforms, broadcast media, live events, and sponsorships. The design process focused on creating a timeless identity that balanced simplicity with strong brand recall, ensuring it would remain effective at every scale, from mobile interfaces to large-format stadium signage.
+<br><br>
+Beyond the logo itself, I led the development of a cohesive brand system that established consistent typography, color palettes, graphic treatments, and visual standards across the organization. This branding framework unified marketing campaigns, product experiences, and corporate communications while giving creative teams the flexibility to adapt the identity across multiple channels. The result was a distinctive, memorable brand that strengthened Bodog's presence in the highly competitive online gaming industry and provided a scalable foundation for future growth.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 </main>
-<a class="case-back" id="caseBack" href="#/case-studies" data-link style="display:none">
-  <i class="fa-solid fa-arrow-left"></i> Case studies
+<a class="case-back" id="caseBack" href="#/case-studies" data-link style="display:none" aria-label="Return to case studies overview">
+  <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Case studies
 </a>
 <div id="loading"><span>Raising the sea…</span></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -1496,18 +1538,30 @@ It is illegal for an employer or union to penalize you for raising a health or s
     '/personal':                  'view-home',
     '/case-studies/worksafebc':   'view-worksafebc',
     '/case-studies/nudata':       'view-nudata',
-    '/case-studies/nudetect':     'view-nudata'
+    '/case-studies/nudetect':     'view-nudata',
+    '/case-studies/bodog':        'view-bodog',
   };
   var caseBack = document.getElementById('caseBack');
   var navLinks = document.getElementById('navLinks');
   var navToggle = document.getElementById('navToggle');
 
   function setActiveNav(path) {
-    document.querySelectorAll('.nav-links a').forEach(function (a) { a.classList.remove('active'); });
+    document.querySelectorAll('.nav-links a').forEach(function (a) {
+      a.classList.remove('active');
+      a.removeAttribute('aria-current');
+    });
     if (path.indexOf('/case-studies') === 0) {
       var l = document.querySelector('.nav-links a[href="#/case-studies"]');
-      if (l) l.classList.add('active');
+      if (l) {
+        l.classList.add('active');
+        l.setAttribute('aria-current', 'page');
+      }
     }
+  }
+
+  function closeMobileNav() {
+    navLinks.classList.remove('open');
+    navToggle.setAttribute('aria-expanded', 'false');
   }
 
   function render() {
@@ -1533,16 +1587,23 @@ It is illegal for an employer or union to penalize you for raising a health or s
     }
 
     // close the mobile menu after navigating
-    navLinks.classList.remove('open');
+    closeMobileNav();
   }
 
   // hash routing = no page reloads; back/forward buttons just work
   window.addEventListener('hashchange', render);
   window.addEventListener('DOMContentLoaded', render);
+  window.addEventListener('resize', function () {
+    if (window.innerWidth > 860) closeMobileNav();
+  });
   render();
 
   // mobile menu
-  navToggle.addEventListener('click', function () { navLinks.classList.toggle('open'); });
+  navToggle.addEventListener('click', function () {
+    var isOpen = !navLinks.classList.contains('open');
+    navLinks.classList.toggle('open', isOpen);
+    navToggle.setAttribute('aria-expanded', String(isOpen));
+  });
 })();
 
 </script>

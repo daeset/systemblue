@@ -1,4 +1,4 @@
-/* 01 — Particle Organism. Three.js for drawing, custom CPU particle physics. */
+/* 01 — Particle Organism. Three.js for drawing, custom CPU particle physics, sound from 01-sound.js. */
 SBL.register('01', {
   mount: function (stage, api) {
     'use strict';
@@ -18,7 +18,46 @@ SBL.register('01', {
     var cam = new THREE.OrthographicCamera(0, W, 0, H, -1, 1);
     var scene = new THREE.Scene();
     var fadeScene = new THREE.Scene(), fadeCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-    var fadeMat = new THREE.MeshBasicMaterial({ color: BG, transparent: true, opacity: .2, depthTest: false });
+    // Background layer. Drawn every frame at low alpha, so particle trails fade into it.
+    // Static: one muted colour. Flow: four muted tetradic hues, domain-warped, with quirks.
+    var wellU = []; for (i = 0; i < 7; i++) wellU.push(new THREE.Vector3());
+    var fadeMat = new THREE.ShaderMaterial({
+      transparent: true, depthTest: false, depthWrite: false,
+      uniforms: {
+        uAlpha: { value: .2 }, uMode: { value: 0 }, uColor: { value: BG.clone() },
+        uC0: { value: new THREE.Color() }, uC1: { value: new THREE.Color() }, uC2: { value: new THREE.Color() }, uC3: { value: new THREE.Color() },
+        uTime: { value: 0 }, uRes: { value: new THREE.Vector2(W, H) }, uMouse: { value: new THREE.Vector3(-9999, -9999, 0) },
+        uW: { value: wellU }, uWN: { value: 0 }, uBand: { value: 0 }, uSleep: { value: 0 }, uFlash: { value: 0 }
+      },
+      vertexShader: 'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}',
+      fragmentShader: [
+        'uniform float uAlpha,uMode,uTime,uWN,uBand,uSleep,uFlash;uniform vec3 uColor,uC0,uC1,uC2,uC3,uMouse;uniform vec2 uRes;uniform vec3 uW[7];varying vec2 vUv;',
+        'float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}',
+        'float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+1.),f.x),f.y);}',
+        'float fbm(vec2 p){float a=.5,s=0.;for(int i=0;i<3;i++){s+=a*noise(p);p=p*2.03+7.1;a*=.5;}return s/.875;}',
+        'void main(){',
+        ' vec3 col=uColor;',
+        ' if(uMode>.5){',
+        '  vec2 px=vec2(vUv.x*uRes.x,(1.-vUv.y)*uRes.y);',
+        '  for(int i=0;i<7;i++){if(float(i)>=uWN)break;vec2 d=px-uW[i].xy;float r2=dot(d,d);px-=d*uW[i].z*.55*14000./(r2+14000.);}',  // wells pinch the field
+        '  vec2 dm=uMouse.xy-px;px+=dm*uMouse.z*exp(-length(dm)/260.);',                                                     // cursor drags it a little
+        '  vec2 p=px/uRes.y;',
+        '  vec2 q=vec2(fbm(p*1.25+vec2(0.,uTime*.035)),fbm(p*1.25+vec2(5.2,1.3)-uTime*.028));',
+        '  float f=fbm(p*1.5+2.2*q+uTime*.02);',
+        '  col=mix(uC0,uC1,smoothstep(.25,.75,q.x));',
+        '  col=mix(col,uC2,smoothstep(.4,.8,f));',
+        '  col=mix(col,uC3,smoothstep(.45,.85,q.y)*.9);',
+        '  for(int i=0;i<7;i++){if(float(i)>=uWN)break;float r=length(px-uW[i].xy);col*=max(.15,1.-.55*uW[i].z/(1.+r*r/900.));}',  // a dark eye at each well
+        '  vec2 uv=vUv-.5;col*=1.-.55*dot(uv,uv);',
+        '  float g=dot(col,vec3(.3,.59,.11));col=mix(col,vec3(g),uSleep*.85)*(1.-.3*uSleep);',
+        '  if(uBand>.01){float lv=mix(40.,4.,uBand);float dz=hash(floor(px/2.)+floor(uTime*12.))-.5;col=floor(col*lv+.5+dz*uBand)/lv;col*=1.-uBand*.22*step(.5,fract(px.y/3.));}',  // 8-bit banding + dither + scanlines
+        '  col+=uFlash*.05;',
+        ' }',
+        ' gl_FragColor=vec4(col,uAlpha);',
+        '}'
+      ].join('\n')
+    });
+    var BU = fadeMat.uniforms;
     var fadeGeo = new THREE.PlaneGeometry(2, 2);
     fadeScene.add(new THREE.Mesh(fadeGeo, fadeMat));
 
@@ -48,12 +87,14 @@ SBL.register('01', {
       W = innerWidth; H = innerHeight;
       renderer.setSize(W, H, false); canvas.style.width = '100%'; canvas.style.height = '100%';
       cam.right = W; cam.bottom = H; cam.updateProjectionMatrix();
-      renderer.clear();
+      renderer.setClearColor(BGS && bgKey !== 'flow' ? bgOf(bgKey).c : BG, 1); renderer.clear();
+      if (typeof BU !== 'undefined') BU.uRes.value.set(W, H);
     }
     addEventListener('resize', resize, sig); resize();
 
     // ---------- discoveries ----------
-    var FINDS = { near: 'it leans toward you', flee: 'it startles', shake: 'it seethes', well: 'a well opens', pop: 'the well inverts', merge: 'two wells become one', nova: 'collapse', eye: 'it is watching you', wake: 'it was asleep', spell: 'it listens', pulse: 'a heartbeat', mitosis: 'it divides' };
+    var FINDS = { near: 'it leans toward you', flee: 'it startles', shake: 'it seethes', well: 'a well opens', pop: 'the well inverts', merge: 'two wells become one', nova: 'collapse', eye: 'it is watching you', wake: 'it was asleep', spell: 'it listens', pulse: 'a heartbeat', mitosis: 'it divides', drill: 'it loses its temper', skip: 'it skips' };
+    FINDS.palette = 'the palette turns';
     var KEYS = Object.keys(FINDS), found = {};
     api.pips(KEYS.length);
     function find(k) { if (found[k]) return; found[k] = 1; api.light(KEYS.indexOf(k)); api.whisper(FINDS[k]); }
@@ -68,6 +109,68 @@ SBL.register('01', {
     var split = 0, splitT = 0, splitUntil = 0, nextSplit = 70 + Math.random() * 60;
     var pulseAt = -9, typed = '', typedAt = 0;
     var cx = W / 2, cy = H / 2, cA = new THREE.Color(), cB = new THREE.Color(), hue = .5;
+
+    // ---------- background: muted tetradic palette ----------
+    var H0 = 222; // systemblue; the tetrad is H0, +90, +180, +270
+    var BGS = [
+      { k: 'void', name: 'Void', c: BG.clone() },
+      { k: 'slate', name: 'Slate', c: new THREE.Color().setHSL(H0 / 360, .26, .12) },
+      { k: 'plum', name: 'Plum', c: new THREE.Color().setHSL(((H0 + 90) % 360) / 360, .22, .12) },
+      { k: 'ochre', name: 'Ochre', c: new THREE.Color().setHSL(((H0 + 180) % 360) / 360, .3, .11) },
+      { k: 'moss', name: 'Moss', c: new THREE.Color().setHSL(((H0 + 270) % 360) / 360, .2, .11) },
+      { k: 'flow', name: 'Flow', c: BG.clone() }
+    ];
+    var bgKey = 'void';
+    try { var sv = localStorage.getItem('sbl-01-bg'); if (BGS.some(function (b) { return b.k === sv; })) bgKey = sv; } catch (e) {}
+    function bgOf(k) { for (var n = 0; n < BGS.length; n++) if (BGS[n].k === k) return BGS[n]; return BGS[0]; }
+    BU.uColor.value.copy(bgOf(bgKey).c);
+    var hueDrift = 0, hueOff = 0, hueOffCur = 0, roll = 0, glitch = 0, bgFlash = 0, nextSwap = 70 + Math.random() * 60;
+    var SL = [.2, .15, .18, .13], SS = [.42, .34, .4, .3];
+    function bgGlitch() { roll = (roll + 1) % 4; glitch = 1; }
+    function cssHex(c) { return '#' + c.getHexString(); }
+    function flowCss() { var c = [0, 1, 2, 3].map(function (k) { return cssHex(new THREE.Color().setHSL(((H0 + 90 * k) % 360) / 360, SS[k] + .1, SL[k] + .12)); }); return 'conic-gradient(' + c.join(',') + ',' + c[0] + ')'; }
+
+    var slot = api.slot && api.slot(), bgBtn = null, bgMenu = null, bgDot = null;
+    if (slot) {
+      var wrap = document.createElement('div'); wrap.className = 'bgpick';
+      bgBtn = document.createElement('button'); bgBtn.type = 'button'; bgBtn.className = 'hudbtn';
+      bgBtn.setAttribute('aria-haspopup', 'true'); bgBtn.setAttribute('aria-expanded', 'false');
+      bgDot = document.createElement('i'); bgDot.className = 'sw sm';
+      var lbl = document.createElement('span'); lbl.textContent = 'BG';
+      bgBtn.appendChild(bgDot); bgBtn.appendChild(lbl);
+      bgMenu = document.createElement('div'); bgMenu.className = 'bgmenu'; bgMenu.hidden = true; bgMenu.setAttribute('role', 'group'); bgMenu.setAttribute('aria-label', 'Background');
+      BGS.forEach(function (b, n) {
+        if (n === BGS.length - 1) { var sep = document.createElement('span'); sep.className = 'bgsep'; bgMenu.appendChild(sep); }
+        var o = document.createElement('button'); o.type = 'button'; o.className = 'sw'; o.dataset.k = b.k;
+        o.title = b.k === 'flow' ? 'Flow (moving gradient)' : b.name; o.setAttribute('aria-label', o.title);
+        o.style.background = b.k === 'flow' ? flowCss() : cssHex(b.c);
+        o.addEventListener('click', function () { setBg(b.k); });
+        bgMenu.appendChild(o);
+      });
+      wrap.appendChild(bgBtn); wrap.appendChild(bgMenu); slot.appendChild(wrap);
+      bgBtn.addEventListener('click', function () { menu(bgMenu.hidden); }, sig);
+      document.addEventListener('pointerdown', function (e) { if (!wrap.contains(e.target)) menu(false); }, sig);
+      addEventListener('keydown', function (e) { if (e.key === 'Escape' && !bgMenu.hidden) { menu(false); bgBtn.focus(); e.stopPropagation(); } }, { capture: true, signal: ac.signal });
+    }
+    function menu(open) { if (!bgMenu) return; bgMenu.hidden = !open; bgBtn.setAttribute('aria-expanded', open ? 'true' : 'false'); }
+    function setBg(k) {
+      bgKey = k; try { localStorage.setItem('sbl-01-bg', k); } catch (e) {}
+      if (bgMenu) [].forEach.call(bgMenu.children, function (o) { if (o.dataset && o.dataset.k) o.setAttribute('aria-pressed', o.dataset.k === k ? 'true' : 'false'); });
+      if (bgDot) bgDot.style.background = k === 'flow' ? flowCss() : cssHex(bgOf(k).c);
+      bgBtn && bgBtn.setAttribute('aria-label', 'Background: ' + bgOf(k).name);
+    }
+    setBg(bgKey);
+
+    // ---------- sound ----------
+    var snd = null, kickTimers = [];
+    try {
+      var A = api.audio && api.audio();
+      if (A && SBL.organismSound) snd = SBL.organismSound(A, {
+        kick: function (delay) { kickTimers.push(setTimeout(function () { burst(M.on ? M.x : cx, M.on ? M.y : cy, 110, Math.min(W, H) * .32); bgFlash = 1; }, Math.max(0, delay * 1000))); if (kickTimers.length > 40) kickTimers.shift(); },
+        found: function (k) { if (k === 'skip') bgGlitch(); find(k); }
+      });
+    } catch (e) { snd = null; }
+    function S(name) { if (!snd) return; try { snd[name].apply(snd, [].slice.call(arguments, 1)); } catch (e) {} }
 
     // ---------- shapes (rasterised, then sampled) ----------
     var sc = document.createElement('canvas'), sx = sc.getContext('2d');
@@ -94,7 +197,7 @@ SBL.register('01', {
     var shapeIdx = Math.floor(Math.random() * SHAPES.length);
     function formShape() {
       shapeIdx = (shapeIdx + 1 + Math.floor(Math.random() * (SHAPES.length - 1))) % SHAPES.length;
-      if (sample(256, 256, SHAPES[shapeIdx])) { shape.on = true; shape.until = t + 7.5; }
+      if (sample(256, 256, SHAPES[shapeIdx])) { shape.on = true; shape.until = t + 7.5; S('shape', shapeIdx); }
     }
     function formText(s) {
       var ok = sample(640, 180, function (c, w, h) { c.font = '700 120px Georgia,serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; var m = c.measureText(s).width; if (m > w - 20) c.font = '700 ' + Math.floor(120 * (w - 20) / m) + 'px Georgia,serif'; c.fillText(s, w / 2, h / 2); });
@@ -107,7 +210,7 @@ SBL.register('01', {
     }
 
     // ---------- input ----------
-    function touch() { lastTouch = t; if (asleep) { asleep = false; burst(M.x, M.y, 420, Math.max(W, H) * .6); find('wake'); } }
+    function touch() { lastTouch = t; if (asleep) { asleep = false; burst(M.x, M.y, 420, Math.max(W, H) * .6); find('wake'); S('wake'); } }
     canvas.addEventListener('pointermove', function (e) {
       var now = performance.now(), dt = Math.max(1, now - M.pt) / 1000, dx = e.clientX - M.x, dy = e.clientY - M.y, sp = Math.hypot(dx, dy) / dt;
       if (M.on) {
@@ -123,16 +226,16 @@ SBL.register('01', {
     canvas.addEventListener('pointerdown', function (e) {
       M.x = e.clientX; M.y = e.clientY; M.on = true; M.down = true; M.lastMove = t; M.pt = performance.now(); touch();
       if (shape.on) dissolve();
-      for (var i = 0; i < wells.length; i++) { var w = wells[i]; if (Math.hypot(w.x - M.x, w.y - M.y) < 46) { wells.splice(i, 1); burst(w.x, w.y, 700 * w.m, 360); find('pop'); return; } }
+      for (var i = 0; i < wells.length; i++) { var w = wells[i]; if (Math.hypot(w.x - M.x, w.y - M.y) < 46) { wells.splice(i, 1); S('pop', w); burst(w.x, w.y, 700 * w.m, 360); find('pop'); return; } }
       if (wells.length >= 7) wells.shift();
       holdWell = { x: M.x, y: M.y, m: 1, born: t, life: 14, f: 0 }; wells.push(holdWell); find('well');
     }, sig);
     addEventListener('pointerup', function (e) { M.down = false; holdWell = null; if (e.pointerType === 'touch') M.on = false; }, sig);
     addEventListener('keydown', function (e) {
       if (e.key === 'Escape' || e.metaKey || e.ctrlKey || e.altKey) return;
-      if (e.key === ' ') { e.preventDefault(); touch(); pulseAt = t; burst(cx, cy, 340, Math.min(W, H) * .6); find('pulse'); return; }
+      if (e.key === ' ') { e.preventDefault(); touch(); pulseAt = t; burst(cx, cy, 340, Math.min(W, H) * .6); find('pulse'); S('pulse'); return; }
       if (e.key === 'Backspace') typed = typed.slice(0, -1);
-      else if (e.key.length === 1) { if (t - typedAt > 3) typed = ''; typed = (typed + e.key).slice(-10); }
+      else if (e.key.length === 1) { if (t - typedAt > 3) typed = ''; typed = (typed + e.key).slice(-10); S('key', e.key); }
       else return;
       typedAt = t; touch();
       if (typed.trim()) { formText(typed); find('spell'); }
@@ -151,8 +254,9 @@ SBL.register('01', {
       if (mode === 2) find('flee'); if (mode === 3) find('shake');
       if (mode === 4 && t - M.lastMove > 4.5) find('eye');
       agit += ((mode === 3 ? 1 : 0) - agit) * dt * 2;
+      if (agit > .85) find('drill');
 
-      if (!asleep && t - lastTouch > 28 && !wells.length && !shape.on) asleep = true;
+      if (!asleep && t - lastTouch > 28 && !wells.length && !shape.on) { asleep = true; S('sleep'); }
       sleepK += ((asleep ? 1 : 0) - sleepK) * dt * .6;
 
       if (t > lobes.next) { lobes.tk = 2 + Math.floor(Math.random() * 6); lobes.ta = .08 + Math.random() * .3; lobes.next = t + 14 + Math.random() * 16; }
@@ -181,8 +285,8 @@ SBL.register('01', {
         for (var b = a - 1; b >= 0; b--) {
           var o = wells[b], ddx = o.x - w.x, ddy = o.y - w.y, dd = Math.hypot(ddx, ddy) + 1;
           if (dd < 34) {
-            o.x = (o.x + w.x) / 2; o.y = (o.y + w.y) / 2; o.m += w.m; o.life = t - o.born + 14; wells.splice(a, 1); find('merge'); burst(o.x, o.y, 220, 220);
-            if (o.m >= 3.4) { wells.splice(b, 1); burst(o.x, o.y, 1500, Math.max(W, H)); find('nova'); shape.next = t + 1.2; }
+            S('merge', w, o); o.x = (o.x + w.x) / 2; o.y = (o.y + w.y) / 2; o.m += w.m; o.life = t - o.born + 14; wells.splice(a, 1); find('merge'); burst(o.x, o.y, 220, 220);
+            if (o.m >= 3.4) { S('pop', o); S('nova'); hueOff += 90; glitch = Math.max(glitch, .5); if (bgKey === 'flow') find('palette'); wells.splice(b, 1); burst(o.x, o.y, 1500, Math.max(W, H)); find('nova'); shape.next = t + 1.2; }
             break;
           }
           var pull = dt * 41600 / (dd * dd + 4000); w.x += ddx / dd * pull * o.m; w.y += ddy / dd * pull * o.m; o.x -= ddx / dd * pull * w.m; o.y -= ddy / dd * pull * w.m;
@@ -225,7 +329,26 @@ SBL.register('01', {
       cA.setHSL(hue, .72, .52 - .12 * sleepK); cB.setHSL((hue + .52) % 1, .95, .78);
       mat.uniforms.uA.value.copy(cA); mat.uniforms.uB.value.copy(cB);
       mat.uniforms.uAlpha.value = (small ? .6 : .5) * (1 - .45 * sleepK); mat.uniforms.uTime.value = t;
-      fadeMat.opacity = .24 - .12 * Math.min(1, agit + sh * .3) + .1 * sleepK;
+      BU.uAlpha.value = .24 - .12 * Math.min(1, agit + sh * .3) + .1 * sleepK;
+      var flow = bgKey === 'flow';
+      BU.uMode.value = flow ? 1 : 0;
+      if (!flow) BU.uColor.value.lerp(bgOf(bgKey).c, 1 - Math.exp(-dt * 5));
+      else {
+        hueDrift += dt * .5; hueOffCur += (hueOff - hueOffCur) * dt * 1.4;
+        if (t > nextSwap) { bgGlitch(); nextSwap = t + 70 + Math.random() * 70; }
+        var hb = H0 + hueDrift + hueOffCur, cs = [BU.uC0.value, BU.uC1.value, BU.uC2.value, BU.uC3.value];
+        for (var q = 0; q < 4; q++) { var kq = (q + roll) % 4; cs[q].setHSL((((hb + 90 * kq) % 360) + 360) % 360 / 360, SS[kq], SL[kq]); }
+        BU.uTime.value = t;
+        BU.uMouse.value.set(M.on ? M.x : -9999, M.on ? M.y : -9999, mode === 1 ? .12 : mode === 4 ? -.08 : .04);
+        BU.uWN.value = nw;
+        for (var wq = 0; wq < 7; wq++) { if (wq < nw) wellU[wq].set(wells[wq].x, wells[wq].y, Math.max(0, wells[wq].f || 0) * .5); }
+        BU.uBand.value = Math.min(1, Math.max(agit * 1.1, glitch));
+        BU.uSleep.value = sleepK;
+        BU.uFlash.value = bgFlash;
+      }
+      glitch = Math.max(0, glitch - dt * 1.6); bgFlash = Math.max(0, bgFlash - dt * 6);
+
+      S('update', { dt: dt, mode: mode, mx: M.x / W, my: M.y / H, agit: agit, sleep: asleep, sleepK: sleepK, split: split / (Math.min(W, H) * .24), shape: sh, wells: nw, wellList: wells, W: W, activity: Math.min(1, M.speed / 900) });
 
       renderer.render(fadeScene, fadeCam);
       renderer.render(scene, cam);
@@ -233,7 +356,7 @@ SBL.register('01', {
     raf = requestAnimationFrame(frame);
 
     return function unmount() {
-      cancelAnimationFrame(raf); ac.abort();
+      cancelAnimationFrame(raf); ac.abort(); kickTimers.forEach(clearTimeout); S('stop');
       geo.dispose(); mat.dispose(); fadeGeo.dispose(); fadeMat.dispose(); renderer.dispose();
     };
   }

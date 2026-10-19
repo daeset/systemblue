@@ -187,6 +187,11 @@ SBL.compositionSound = function (A) {
       g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.08, t + .45); g.gain.linearRampToValueAtTime(0, t + .48);
       var p = out(g, 0, 1); a.start(t); done(a, t + .5, [g, p]);
     },
+    fall: function () {
+      if (!ok()) return; var t = T(), a = osc('triangle', mtof(root + 24)), g = ctx.createGain();
+      a.frequency.setValueAtTime(mtof(root + 24), t); a.frequency.exponentialRampToValueAtTime(mtof(root - 12), t + .7);
+      a.connect(g); var end = env(g, t, .08, .005, .75); var p = out(g, 0, .6); a.start(t); done(a, end, [g, p]);
+    },
     turn: function (v) {
       var t = T(), a = clamp(Math.abs(v) / 6, 0, 1);
       windG.gain.setTargetAtTime(a * .09, t, .1); windF.frequency.setTargetAtTime(250 + a * 2600, t, .1);

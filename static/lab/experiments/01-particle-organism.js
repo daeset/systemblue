@@ -2,6 +2,7 @@
 SBL.register('01', {
   mount: function (stage, api) {
     'use strict';
+    function clamp(x, a, b) { return x < a ? a : x > b ? b : x; }
     var canvas = document.createElement('canvas');
     canvas.style.cursor = 'crosshair'; canvas.style.touchAction = 'none';
     stage.appendChild(canvas);
@@ -95,6 +96,7 @@ SBL.register('01', {
     // ---------- discoveries ----------
     var FINDS = { near: 'it leans toward you', flee: 'it startles', shake: 'it seethes', well: 'a well opens', pop: 'the well inverts', merge: 'two wells become one', nova: 'collapse', eye: 'it is watching you', wake: 'it was asleep', spell: 'it listens', pulse: 'a heartbeat', mitosis: 'it divides', drill: 'it loses its temper', skip: 'it skips' };
     FINDS.palette = 'the palette turns';
+    if (api.touch) { FINDS.gather = 'it gathers in your hand'; FINDS.squeeze = 'it can be squeezed'; FINDS.twist = 'it turns against itself'; FINDS.gust = 'a gust'; FINDS.ring = 'a ring'; FINDS.tempo = 'it keeps your time'; FINDS.pour = 'it falls'; FINDS.wait = 'it waited for you'; }
     var KEYS = Object.keys(FINDS), found = {};
     api.pips(KEYS.length);
     function find(k) { if (found[k]) return; found[k] = 1; api.light(KEYS.indexOf(k)); api.whisper(FINDS[k]); }
@@ -212,6 +214,7 @@ SBL.register('01', {
     // ---------- input ----------
     function touch() { lastTouch = t; if (asleep) { asleep = false; burst(M.x, M.y, 420, Math.max(W, H) * .6); find('wake'); S('wake'); } }
     canvas.addEventListener('pointermove', function (e) {
+      if (e.pointerType === 'touch' && (Gc() > 1 || gather.on)) return;
       var now = performance.now(), dt = Math.max(1, now - M.pt) / 1000, dx = e.clientX - M.x, dy = e.clientY - M.y, sp = Math.hypot(dx, dy) / dt;
       if (M.on) {
         M.speed += (sp - M.speed) * .35;
@@ -224,12 +227,55 @@ SBL.register('01', {
     }, sig);
     canvas.addEventListener('pointerleave', function () { M.on = false; }, sig);
     canvas.addEventListener('pointerdown', function (e) {
+      if (e.pointerType === 'touch') { if (Gc() > 1) { M.on = false; return; } M.x = e.clientX; M.y = e.clientY; M.on = true; M.lastMove = t; M.pt = performance.now(); M.speed = 0; touch(); return; }
       M.x = e.clientX; M.y = e.clientY; M.on = true; M.down = true; M.lastMove = t; M.pt = performance.now(); touch();
-      if (shape.on) dissolve();
-      for (var i = 0; i < wells.length; i++) { var w = wells[i]; if (Math.hypot(w.x - M.x, w.y - M.y) < 46) { wells.splice(i, 1); S('pop', w); burst(w.x, w.y, 700 * w.m, 360); find('pop'); return; } }
-      if (wells.length >= 7) wells.shift();
-      holdWell = { x: M.x, y: M.y, m: 1, born: t, life: 14, f: 0 }; wells.push(holdWell); find('well');
+      if (wellAt(M.x, M.y)) holdWell = wells[wells.length - 1];
     }, sig);
+    function wellAt(x, y) { // returns true when a new well was made
+      if (shape.on) dissolve();
+      for (var i = 0; i < wells.length; i++) { var w = wells[i]; if (Math.hypot(w.x - x, w.y - y) < (api.touch ? 60 : 46)) { wells.splice(i, 1); S('pop', w); burst(w.x, w.y, 700 * w.m, 360); find('pop'); return false; } }
+      if (wells.length >= 7) wells.shift();
+      wells.push({ x: x, y: y, m: 1, born: t, life: 14, f: 0 }); find('well'); return true;
+    }
+
+    // ---------- touch gestures ----------
+    var gather = { on: false, x: 0, y: 0, k: 0 }, squeeze = 1, squeezeT = 1, twistV = 0, twistAcc = 0, gust = { x: 0, y: 0 }, pourUntil = -1, tempo = { until: -1, next: 0, iv: 1 };
+    var G = api.gestures ? api.gestures(canvas, onGesture) : null;
+    function Gc() { return G && G.count ? G.count() : 0; }
+    function onGesture(type, d) {
+      touch();
+      switch (type) {
+        case 'tap': wellAt(d.x, d.y); M.on = false; break;
+        case 'multistart': M.on = false; break;
+        case 'longpress': gather.on = true; gather.x = d.x; gather.y = d.y; M.on = false; S('gather', true); api.buzz(12); find('gather'); break;
+        case 'longmove': gather.x = d.x; gather.y = d.y; break;
+        case 'longend':
+          if (!gather.on) break; gather.on = false; S('gather', false);
+          if (!d.cancel) { burst(gather.x, gather.y, 1100, Math.max(W, H) * .8); S('fling', gather.x / W); api.buzz(30); }
+          break;
+        case 'pinch': squeezeT = clamp(d.scale, .35, 2.2); S('squeeze', squeezeT); if (Math.abs(d.scale - 1) > .25) find('squeeze'); break;
+        case 'rotate':
+          twistV += d.delta * 260; twistAcc += d.delta;
+          if (Math.abs(twistAcc) > Math.PI) { twistAcc = 0; for (var q = 0; q < N; q++) dir[q] = -dir[q]; S('reverse'); api.buzz(20); find('twist'); }
+          break;
+        case 'multiend':
+          if (squeezeT < .5) { splitUntil = t + 12; find('mitosis'); burst(cx, cy, 260, Math.min(W, H) * .5); }
+          else if (squeezeT > 1.9) { burst(cx, cy, 900, Math.max(W, H)); S('fling', .5); }
+          squeezeT = 1; S('squeeze', 1); twistAcc = 0; break;
+        case 'swipe':
+          if (d.edge) { var order = ['void', 'slate', 'plum', 'ochre', 'moss', 'flow'], ix = order.indexOf(bgKey); setBg(order[(ix + (d.edge === 'left' ? 1 : order.length - 1)) % order.length]); api.buzz(10); break; }
+          var sp = Math.min(3, d.v) * 520, len = Math.hypot(d.dx, d.dy) || 1; gust.x += d.dx / len * sp; gust.y += d.dy / len * sp; S('fling', d.x / W); find('gust'); break;
+        case 'rubbing': M.x = d.x; M.y = d.y; M.on = true; M.shake = 8; M.lastMove = t; break;
+        case 'circle':
+          sample(256, 256, function (c) { c.lineWidth = 14; c.beginPath(); c.arc(128, 128, 104, 0, 7); c.stroke(); c.lineWidth = 6; c.beginPath(); c.arc(128, 128, 64, 0, 7); c.stroke(); });
+          shape.on = true; shape.until = t + 5; S('circle', d.cw); if (!d.cw) S('reverse'); find('ring'); break;
+        case 'threetap': pulseAt = t; burst(cx, cy, 340, Math.min(W, H) * .6); S('pulse'); find('pulse'); break;
+        case 'twotap': setBg(bgKey === 'flow' ? 'void' : 'flow'); break;
+        case 'tempo': tempo.iv = 60 / clamp(d.bpm, 50, 200); tempo.until = t + 24; tempo.next = t; find('tempo'); break;
+        case 'orient': pourUntil = t + 3.2; S('reverse'); find('pour'); break;
+        case 'return': asleep = false; sample(256, 256, SHAPES[1]); shape.on = true; shape.until = t + 6; S('wake'); api.whisper('it waited for you'); find('wait'); break;
+      }
+    }
     addEventListener('pointerup', function (e) { M.down = false; holdWell = null; if (e.pointerType === 'touch') M.on = false; }, sig);
     addEventListener('keydown', function (e) {
       if (e.key === 'Escape' || e.metaKey || e.ctrlKey || e.altKey) return;
@@ -247,6 +293,10 @@ SBL.register('01', {
       var dt = Math.min(.033, (now - last) / 1000); last = now; if (dt <= 0) return; t += dt;
 
       M.speed *= Math.pow(.02, dt); M.shake = Math.max(0, M.shake - 1.6 * dt);
+      squeeze += (squeezeT - squeeze) * Math.min(1, dt * 8); twistV *= Math.pow(.3, dt); gust.x *= Math.pow(.08, dt); gust.y *= Math.pow(.08, dt);
+      gather.k += ((gather.on ? 1 : 0) - gather.k) * Math.min(1, dt * (gather.on ? 2.5 : 8));
+      var pourK = t < pourUntil ? Math.min(1, (pourUntil - t) * 2) : 0;
+      if (t < tempo.until && t >= tempo.next) { tempo.next += tempo.iv; if (tempo.next < t) tempo.next = t + tempo.iv; pulseAt = t; S('pulse'); burst(cx, cy, 120, Math.min(W, H) * .4); }
       var still = M.on && (t - M.lastMove > 2.2) && !M.down;
       var mode = 0; // 1 attract · 2 repel · 3 agitate · 4 eye
       if (M.on) mode = M.shake > 3 ? 3 : (M.speed > 1100 ? 2 : (still ? 4 : 1));
@@ -273,8 +323,9 @@ SBL.register('01', {
       cx += (gx - cx) * dt * .9; cy += (gy - cy) * dt * .9;
       var beat = Math.exp(-(t - pulseAt) * 3) * .25;
       var breath = 1 + (.1 - .04 * sleepK) * Math.sin(t * (.9 - .5 * sleepK)) + beat;
-      var R = m * .3 * breath * (1 - .45 * sleepK);
-      var flowF = 46 * (1 - .7 * sleepK) * (1 + agit * 2), swirl = 34 * (1 - .6 * sleepK);
+      var R = m * .3 * breath * (1 - .45 * sleepK) * squeeze;
+      var flowF = 46 * (1 - .7 * sleepK) * (1 + agit * 2), swirl = 34 * (1 - .6 * sleepK) + twistV;
+      var gk = gather.k * .92, gxp = gather.x, gyp = gather.y, gr = m * .06;
       var damp = Math.pow(shape.k > .5 ? .02 : .07, dt);
       var Rc = m * (mode === 3 ? .34 : .28), Rc2 = Rc * Rc, sh = shape.k, lk = Math.round(lobes.k), la = lobes.amp, ph = t * .5;
 
@@ -303,6 +354,9 @@ SBL.register('01', {
         var fa = (Math.sin(x * .0042 + t * .31 + s) + Math.cos(y * .0051 - t * .27)) * 3.1416;
         var ax = nx * fr - ny * sw + Math.cos(fa) * flowF, ay = ny * fr + nx * sw + Math.sin(fa) * flowF;
         if (sh > .01) { var k = sh * sh; ax = ax * (1 - k) + (tx[i] - x) * 9 * k; ay = ay * (1 - k) + (ty[i] - y) * 9 * k; }
+        if (gk > .01) { var hx = x - gxp, hy = y - gyp, hd = Math.sqrt(hx * hx + hy * hy) + .01, hr = gr * rad[i]; ax = ax * (1 - gk) + ((hr - hd) * 7 * hx / hd - hy / hd * 160 * dir[i]) * gk; ay = ay * (1 - gk) + ((hr - hd) * 7 * hy / hd + hx / hd * 160 * dir[i]) * gk; }
+        ax += gust.x * (.6 + s * .8); ay += gust.y * (.6 + s * .8);
+        if (pourK > 0) { ax *= 1 - pourK * .85; ay = ay * (1 - pourK * .85) + 1600 * pourK * (.5 + s); if (y > H - 4 && vy[i] > 0) vy[i] *= -.3; }
         if (mode) {
           var mx = M.x - x, my = M.y - y, m2 = mx * mx + my * my;
           if (m2 < Rc2) {
@@ -356,7 +410,7 @@ SBL.register('01', {
     raf = requestAnimationFrame(frame);
 
     return function unmount() {
-      cancelAnimationFrame(raf); ac.abort(); kickTimers.forEach(clearTimeout); S('stop');
+      cancelAnimationFrame(raf); ac.abort(); kickTimers.forEach(clearTimeout); if (G) G(); S('stop');
       geo.dispose(); mat.dispose(); fadeGeo.dispose(); fadeMat.dispose(); renderer.dispose();
     };
   }

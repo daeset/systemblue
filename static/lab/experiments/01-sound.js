@@ -208,7 +208,7 @@ SBL.organismSound = function (A, hooks) {
   }
   function reverseLine() { var tt = tones(), t = T() + .1; for (var i = 0; i < 5; i++) bell(pick(tt), .07, rnd(-.6, .6), t + i * 1.1, { atk: rnd(.8, 1.3), rev: true, ratio: 2, idx: 1.2 }); }
 
-  var nextSurprise = T() + rnd(75, 140), oddUntil = 0, uT = 0, prevMode = 0;
+  var nextSurprise = T() + rnd(75, 140), oddUntil = 0, uT = 0, prevMode = 0, gathering = false;
 
   // ---------- public ----------
   return {
@@ -256,7 +256,7 @@ SBL.organismSound = function (A, hooks) {
       padF.frequency.setTargetAtTime((520 + (s.mode === 1 ? 1900 * (1 - s.my) : 500) + 1400 * s.agit + 900 * s.shape) * (1 - .55 * s.sleepK), t, .4);
       airF.frequency.setTargetAtTime(260 + 2600 * (1 - s.my), t, .3);
       airG.gain.setTargetAtTime(.012 + .03 * s.agit, t, .3);
-      eyeG.gain.setTargetAtTime(s.mode === 4 ? .016 : 0, t, s.mode === 4 ? 1.6 : .25);
+      eyeG.gain.setTargetAtTime(s.mode === 4 || gathering ? .018 : 0, t, s.mode === 4 || gathering ? 1.2 : .25);
       padBus.gain.setTargetAtTime(dOn ? .35 : 1, t, dOn ? .08 : .9);
       wowDepth.gain.setTargetAtTime(8 + 30 * s.sleepK + 14 * s.split, t, .5);
       pads.forEach(function (p, i) {
@@ -297,6 +297,11 @@ SBL.organismSound = function (A, hooks) {
       else box(m, .08, ((c % 7) - 3) / 4, 0);
     },
     pulse: function () { if (!ok()) return; var t = T(); kick(t, .55, tone); kick(t + .2, .35, tone); },
+    gather: function (on) { gathering = on; if (!tapeFx || !ok()) return; var t = T(); tapeFx.offset.cancelScheduledValues(t); tapeFx.offset.setTargetAtTime(on ? 140 : 0, t, on ? 1.4 : .12); },
+    fling: function (xn) { if (!ok()) return; lastZip = 0; zip(xn); kick(T(), .5, tone); },
+    squeeze: function (k) { if (!tapeFx || !ok()) return; tapeFx.offset.setTargetAtTime((1 - k) * 600, T(), .06); },
+    reverse: function () { if (ok()) reverseLine(); },
+    circle: function (cw) { if (!ok()) return; var tt = tones(), t = T() + .03; tt.sort(function (a, b) { return a - b; }); if (!cw) tt.reverse(); for (var i = 0; i < 8; i++) box(tt[i % tt.length], .07, Math.sin(i / 8 * 6.283) * .8, t + i * .09); },
     shape: function (idx) { if (!ok()) return; setChord(CH[idx % CH.length], .9); nextChord = T() + 16; phrase(idx * 977 + 13, 7 + idx % 3); },
     stop: function () {
       alive = false; var t = T();

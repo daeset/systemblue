@@ -43,6 +43,7 @@ SBL.register('04', {
 
     // ---------- discoveries ----------
     var FINDS = { fresh: 'a new order', sing: 'it sings back', back: 'it remembers', turn: 'it turns', scatter: 'it scatters', drift: 'it rearranges itself', chaos: 'chaos', order: 'perfect order', golden: 'a golden one', hold: 'held' };
+    if (api.touch) { FINDS.carry = 'you moved a piece'; FINDS.discard = 'gone'; FINDS.density = 'more, less'; FINDS.mirror = 'it reflects'; FINDS.calm = 'it finds order'; FINDS.tempo = 'it plays in your time'; FINDS.recolor = 'it changes colour'; FINDS.away = 'it kept composing'; }
     var KEYS = Object.keys(FINDS), found = {};
     api.pips(KEYS.length);
     function find(k) { if (found[k]) return; found[k] = 1; api.light(KEYS.indexOf(k)); api.whisper(FINDS[k]); }
@@ -188,7 +189,10 @@ SBL.register('04', {
         if (!frozen) {
           gRot += rotVel * dt + (cur.sym > 1 ? dt * .012 * (1 + cur.e * 2) : 0);
           if (!drag) rotVel *= Math.pow(.25, dt);
-          var bar = moodOf(P.mood).bar, prev = phase; phase += dt / bar;
+          var bar = tempoBar || moodOf(P.mood).bar, prev = phase; phase += dt / bar;
+          if (chaosK > .01) { chaosK *= Math.pow(.35, dt); cur.els.forEach(function (el) { el.vx += (Math.random() - .5) * chaosK * 8 * dt * 6; el.vy += (Math.random() - .5) * chaosK * 8 * dt * 6; }); S('setEntropy', Math.min(1, cur.e + chaosK)); }
+          if (carry && t - carry.hum > .38) { carry.hum = t; S('hover', carry.el.cls, carry.el.rad, carry.el.tier, (carry.x / W) * 2 - 1); carry.el.fl[carry.j] = 1; }
+          if (calmUntil > 0 && t > calmUntil) { calmUntil = 0; P.entropy = calmSaved.e; P.sym = calmSaved.sym; regenerate(); }
           triggers(prev, phase, bar);
           if (phase >= 1) phase -= 1;
           if (t > nextMut) { mutate(); nextMut = t + lerp(9, 3, cur.e) * (.6 + Math.random() * .8); }
@@ -218,7 +222,7 @@ SBL.register('04', {
     function drawEl(p, ctx2, el, prog, alpha, grow, dt) {
       // scatter spring
       el.vx += (-30 * el.dx - 5 * el.vx) * dt; el.vy += (-30 * el.dy - 5 * el.vy) * dt; el.dx += el.vx * dt; el.dy += el.vy * dt;
-      var w = frozen ? 0 : el.wamp * Math.sin(t * el.wsp + el.wph), copies = el.cps;
+      var w = frozen ? 0 : el.wamp * (1 + chaosK * 8) * Math.sin(t * el.wsp * (1 + chaosK * 3) + el.wph), copies = el.cps;
       for (var j = 0; j < copies.length; j++) {
         var cp = copies[j], f = el.fl[j]; el.fl[j] = Math.max(0, f - dt * 2.5);
         var sc = el.s * R * grow * (1 + f * .18);
@@ -298,8 +302,10 @@ SBL.register('04', {
     }
     function touch() { lastInput = t; interacted = true; }
     function bindInput(cv) {
+      G = api.gestures ? api.gestures(cv, onGesture) : null;
       cv.addEventListener('pointermove', function (e) {
         mx = e.clientX; my = e.clientY; lastMove = t; touch();
+        if (e.pointerType === 'touch' && (Gc() > 1 || carry)) return;
         if (drag) {
           var a = Math.atan2(my - H / 2, mx - W / 2), da = a - drag.a; if (da > PI) da -= TAU; if (da < -PI) da += TAU;
           if (!drag.moved && Math.hypot(mx - drag.x, my - drag.y) > 7) { drag.moved = true; find('turn'); }
@@ -311,7 +317,9 @@ SBL.register('04', {
       cv.addEventListener('pointerdown', function (e) {
         touch(); mx = e.clientX; my = e.clientY;
         if (panelOpen) { openPanel(false); drag = null; return; }
+        if (e.pointerType === 'touch' && Gc() > 1) { drag = null; if (pendingClick) { clearTimeout(pendingClick); pendingClick = 0; } return; }
         try { cv.setPointerCapture(e.pointerId); } catch (er) {}
+        rot0 = gRot;
         drag = { x: mx, y: my, a: Math.atan2(my - H / 2, mx - W / 2), moved: false, tm: performance.now() };
       }, sig);
       cv.addEventListener('pointerup', function () {
@@ -325,6 +333,62 @@ SBL.register('04', {
         e.preventDefault(); touch(); wheelAcc += e.deltaY;
         if (Math.abs(wheelAcc) > 80) { step(wheelAcc > 0 ? 1 : -1); wheelAcc = 0; }
       }, { passive: false, signal: ac.signal });
+    }
+    // ---------- touch gestures ----------
+    var G = null, carry = null, rot0 = 0, tempoBar = 0, chaosK = 0, calmUntil = 0, calmSaved = null, pinchC0 = 0, pinchT = 0, symAcc = 0;
+    function Gc() { return G && G.count ? G.count() : 0; }
+    function pickEl(x, y) {
+      if (!cur) return null;
+      for (var i = cur.els.length - 1; i >= 0; i--) {
+        var el = cur.els[i]; if (t < el.born) continue;
+        for (var j = 0; j < el.fl.length; j++) { var c = screenCenter(el, j), rr = Math.max(22, el.s * R + 8); if ((x - c[0]) * (x - c[0]) + (y - c[1]) * (y - c[1]) < rr * rr) return { el: el, j: j }; }
+      }
+      return null;
+    }
+    function onGesture(type, d) {
+      touch();
+      switch (type) {
+        case 'multistart': drag = null; if (pendingClick) { clearTimeout(pendingClick); pendingClick = 0; } pinchC0 = P.complexity; symAcc = 0; break;
+        case 'pinch':
+          P.complexity = clamp(pinchC0 * Math.pow(d.scale, 1.1), 0, 1);
+          if (t - pinchT > .3 && Math.abs(d.scale - 1) > .08) { pinchT = t; regenerate(); find('density'); }
+          break;
+        case 'rotate':
+          symAcc += d.delta;
+          if (Math.abs(symAcc) > .55) { var ns = clamp(P.sym + (symAcc > 0 ? 1 : -1), 0, 4); symAcc = 0; if (ns !== P.sym) { P.sym = ns; regenerate(); api.buzz(15); find('mirror'); } }
+          break;
+        case 'multiend': save(); if (Math.abs(d.scale - 1) > .08) regenerate(); break;
+        case 'longpress':
+          var hit = pickEl(d.x, d.y); if (!hit) break;
+          if (pendingClick) { clearTimeout(pendingClick); pendingClick = 0; }
+          drag = null; carry = { el: hit.el, j: hit.j, x: d.x, y: d.y, hum: 0 }; api.buzz(12); break;
+        case 'longmove':
+          if (!carry) break; carry.x = d.x; carry.y = d.y;
+          var cp = cur.copies[carry.j] || cur.copies[0], a = -(gRot + cp.a), lx = d.x - W / 2, ly = d.y - H / 2, rx = lx * Math.cos(a) - ly * Math.sin(a), ry = lx * Math.sin(a) + ly * Math.cos(a);
+          if (cp.m) rx = -rx; carry.el.x = rx / R - carry.el.dx; carry.el.y = ry / R - carry.el.dy; break;
+        case 'longend':
+          if (!carry) break; var ce = carry.el; carry = null;
+          if (d.x < 36 || d.x > W - 36 || d.y < 36 || d.y > H - 36) { var ix = cur.els.indexOf(ce); if (ix >= 0) { cur.els.splice(ix, 1); ce.dying = true; ce.dieAt = t; dying.push(ce); } S('fall'); api.buzz(25); find('discard'); }
+          else { place(ce, cur); find('carry'); }
+          break;
+        case 'swipe':
+          if (d.edge) { var mi = MOODS.map(function (m) { return m.k; }).indexOf(P.mood); P.mood = MOODS[(mi + (d.edge === 'left' ? 1 : MOODS.length - 1)) % MOODS.length].k; save(); S('setMood', P.mood); syncPanel(); api.whisper(moodOf(P.mood).label.toLowerCase()); break; }
+          if (d.dir === 'left' || d.dir === 'right') { gRot = rot0; rotVel = 0; if (pendingClick) { clearTimeout(pendingClick); pendingClick = 0; } step(d.dir === 'left' ? 1 : -1); }
+          else if (d.dir === 'up') scatter();
+          break;
+        case 'rubbing': chaosK = Math.min(1.5, chaosK + d.level * .12); if (chaosK > 1) find('chaos'); break;
+        case 'circle':
+          if (calmUntil === 0) calmSaved = { e: P.entropy, sym: P.sym };
+          calmUntil = t + 12; P.entropy = 0; P.sym = 4; regenerate(); S('compose', false); find('calm'); break;
+        case 'threetap': frozen = !frozen; S('freeze', frozen); if (frozen) find('hold'); break;
+        case 'twotap': step(-1); break;
+        case 'tempo': tempoBar = 60 / clamp(d.bpm, 40, 220) * 8; phase = 0; find('tempo'); break;
+        case 'orient': P.pal = (P.pal + 1) % PALS.length; save(); regenerate(); find('recolor'); break;
+        case 'return':
+          var nn = Math.max(2, Math.min(9, Math.floor(d.away / 5)));
+          for (var q = 0; q < nn; q++) { history = history.slice(0, hi + 1); history.push(newSeed()); hi = history.length - 1; }
+          show(history[hi]); api.whisper('it made ' + nn + ' while you were away'); find('away'); break;
+      }
     }
     function scatter() {
       if (!cur) return; find('scatter'); S('scatter');
@@ -390,7 +454,7 @@ SBL.register('04', {
       var mr = el('div', 'icrow'); mr.appendChild(el('span', 'iclab', 'Mood')); var seg = el('div', 'icseg'); mr.appendChild(seg); panel.appendChild(mr);
       ctl.moods = MOODS.map(function (m) {
         var b = el('button', null, m.label); b.type = 'button';
-        b.addEventListener('click', function () { P.mood = m.k; save(); S('setMood', m.k); syncPanel(); }); seg.appendChild(b); return b;
+        b.addEventListener('click', function () { P.mood = m.k; tempoBar = 0; save(); S('setMood', m.k); syncPanel(); }); seg.appendChild(b); return b;
       });
       var fr = el('div', 'icfoot');
       var prevB = el('button', 'icnav', '‹'); prevB.type = 'button'; prevB.setAttribute('aria-label', 'Previous composition');
@@ -428,7 +492,7 @@ SBL.register('04', {
     fresh();
 
     return function unmount() {
-      ac.abort(); if (pendingClick) clearTimeout(pendingClick);
+      ac.abort(); if (pendingClick) clearTimeout(pendingClick); if (G) G();
       try { p5i.remove(); } catch (e) {}
       S('stop');
     };
